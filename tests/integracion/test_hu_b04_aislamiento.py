@@ -249,11 +249,11 @@ async def test_no_se_firma_una_clave_fuera_del_prefijo_de_la_organizacion(
 async def test_los_archivos_se_guardan_bajo_el_prefijo_de_la_organizacion_con_nombre_aleatorio(
     cliente: httpx.AsyncClient, escenario: Escenario, almacen: AlmacenFalso
 ) -> None:
-    for _ in range(2):
+    for variante in (b"% uno\n", b"% dos\n"):  # contenidos distintos: no son duplicados
         respuesta = await cliente.post(
             "/api/licitaciones",
             headers=escenario.beta.cabeceras,
-            files={"archivo": ("Pliego Confidencial 2026.pdf", PDF, "application/pdf")},
+            files={"archivo": ("Pliego Confidencial 2026.pdf", PDF + variante, "application/pdf")},
         )
         assert respuesta.status_code == 202
 
