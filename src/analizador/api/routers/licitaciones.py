@@ -6,13 +6,15 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from analizador.api import cuotas
+from analizador.api import cuotas, matriz
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
+from analizador.contratos.decision import Recomendacion
 from analizador.core.config import get_settings
 from analizador.integrations import almacenamiento
 from analizador.models import (
@@ -23,9 +25,10 @@ from analizador.models import (
     Seccion,
     TrabajoProcesamiento,
 )
-from analizador.models.enums import EstadoTrabajo, TipoTrabajo
+from analizador.models.enums import EstadoLicitacion, EstadoTrabajo, TipoTrabajo
 from analizador.pipeline import catalogo
 from analizador.schemas import (
+    ErrorResultadoOut,
     EtapaOut,
     LicitacionCreada,
     LicitacionDetalle,
@@ -33,8 +36,10 @@ from analizador.schemas import (
     PreguntaIn,
     ProgresoOut,
     RequisitoOut,
+    ResultadoMatrizOut,
     SeccionesProgreso,
     TrabajoOut,
+    UrlPdfOut,
 )
 
 logger = logging.getLogger(__name__)
@@ -270,6 +275,17 @@ async def detalle(
     )
 
 
+@router.get("/{licitacion_id}/pdf-url", response_model=UrlPdfOut)
+async def renovar_url_pdf(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep, response: Response
+) -> UrlPdfOut:
+    """Renueva el acceso temporal al pliego del visor (HU-B21, RF-26)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    url = await url_del_pdf(licitacion, contexto.organizacion_id)
+    response.headers["Cache-Control"] = "no-store"
+    return UrlPdfOut(pdf_url_temporal=url)
+
+
 @router.get("/{licitacion_id}/progreso", response_model=ProgresoOut)
 async def progreso(
     licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep
@@ -283,13 +299,68 @@ async def progreso(
         select(TrabajoProcesamiento)
         .where(
             TrabajoProcesamiento.licitacion_id == licitacion.id,
+            TrabajoProcesamiento.organizacion_id == contexto.organizacion_id,
             TrabajoProcesamiento.tipo == TipoTrabajo.ANALISIS,
         )
-        .order_by(TrabajoProcesamiento.creado_en.desc())
+        .order_by(TrabajoProcesamiento.creado_en.desc(), TrabajoProcesamiento.id.desc())
     )
     if trabajo is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Licitación no encontrada")
+    return await _progreso_de(session, licitacion, trabajo)
 
+
+@router.get(
+    "/{licitacion_id}/resultado",
+    response_model=ResultadoMatrizOut,
+    responses={202: {"model": ProgresoOut}, 409: {"model": ProgresoOut | ErrorResultadoOut}},
+)
+async def resultado_matriz(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep, response: Response
+) -> ResultadoMatrizOut | JSONResponse:
+    """Entrega el resultado consolidado, o el avance cuando el trabajo sigue activo (HU-B21)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    trabajo = await session.scalar(
+        select(TrabajoProcesamiento)
+        .where(
+            TrabajoProcesamiento.licitacion_id == licitacion.id,
+            TrabajoProcesamiento.organizacion_id == contexto.organizacion_id,
+            TrabajoProcesamiento.tipo.in_([TipoTrabajo.ANALISIS, TipoTrabajo.REEVALUACION]),
+        )
+        .order_by(TrabajoProcesamiento.creado_en.desc(), TrabajoProcesamiento.id.desc())
+        .limit(1)
+    )
+    if trabajo is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Resultado no encontrado")
+    if (
+        trabajo.estado != EstadoTrabajo.COMPLETADO
+        or licitacion.estado != EstadoLicitacion.COMPLETADA
+    ):
+        avance = await _progreso_de(session, licitacion, trabajo)
+        codigo = (
+            status.HTTP_409_CONFLICT
+            if trabajo.estado in (EstadoTrabajo.FALLIDO, EstadoTrabajo.COMPLETADO)
+            else status.HTTP_202_ACCEPTED
+        )
+        return JSONResponse(status_code=codigo, content=avance.model_dump(mode="json"))
+    if licitacion.recomendacion not in tuple(Recomendacion) or not licitacion.justificacion:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "El análisis no contiene un resultado consolidado."
+        )
+    url = await url_del_pdf(licitacion, contexto.organizacion_id)
+    response.headers["Cache-Control"] = "no-store"
+    return await matriz.construir(
+        session,
+        licitacion,
+        contexto.organizacion_id,
+        Recomendacion(licitacion.recomendacion),
+        licitacion.justificacion,
+        url,
+    )
+
+
+async def _progreso_de(
+    session: AsyncSession, licitacion: Licitacion, trabajo: TrabajoProcesamiento
+) -> ProgresoOut:
     total, procesadas = (
         await session.execute(
             select(

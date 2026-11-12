@@ -99,6 +99,7 @@ PostgreSQL del Compose de desarrollo; si no está arriba, se omiten. En el CI la
 El contrato de la API para el frontend está en [docs/openapi.json](docs/openapi.json); se
 regenera con `uv run analizador-cli exportar-openapi` y una prueba falla si queda desactualizado.
 El plan de implementación y su seguimiento están en [docs/PLAN.md](docs/PLAN.md).
+La configuración de agentes (Codex y Claude Code) y sus skills están en [Agent Skills](agent_skills.md).
 
 ## Estructura
 

@@ -32,8 +32,8 @@ Convenciones heredadas del andamiaje: SQLAlchemy 2 asíncrono, Alembic, enumerac
 | Contratos de datos | Se definen en `src/analizador/contratos/` con un JSON sintético de ejemplo | P-18 (no aprobada) |
 | Lectura de PDF | PyMuPDF (texto, coordenadas, render) y pdfplumber (tablas) | Etapa 1 [P]; R-13 por la licencia AGPL |
 | OCR | Tesseract en español; Claude con visión como respaldo. Se implementa dentro de HU-B10 | P-09 (no aprobada) |
-| Reglas de recomendación | Estricta (ver sección 5) | P-05, Q-04 (no aprobadas) |
-| Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST | **Reemplaza ADR-005 (AWS S3)** |
+| Reglas de recomendación | Estricta para la demo (ver sección 5) | P-05, Q-04, confirmadas para la demo |
+| Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST. Confirmada por el equipo el 2026-11-12 | **Reemplaza ADR-005 (AWS S3)**; falta reflejarlo en el DAS v0.4 |
 
 ## 3. Orden de implementación y seguimiento
 
@@ -60,9 +60,9 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 17 | HU-B16 | Recuperar evidencia de la base de conocimiento | hecha | sar | 65f418a, bc2631e | #22 |
 | 18 | HU-B17 | Verificar el cumplimiento de cada ítem | hecha | sar | 073cac9, ee945fe | #23 |
 | 19 | HU-B18 | Validar que las citas existen en la fuente | hecha | sar | ab07bd9, a17aa67 | #24 |
-| 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | pendiente | sar | | |
-| 21 | HU-B19 | Calcular brechas, recomendación y justificación | pendiente | sar | | |
-| 22 | HU-B21 | Entregar el resultado y el acceso al PDF | pendiente | sar | | |
+| 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | hecha | laqg | 325aa93, f023046 | |
+| 21 | HU-B19 | Calcular brechas, recomendación y justificación | hecha | laqg | 8db204a, eb5ccf8 | |
+| 22 | HU-B21 | Entregar el resultado y el acceso al PDF | hecha; integración frontend pendiente | laqg | ee6f7fe, 8bf0dd2 | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
 
 Fuera de este plan: HU-B02, B03, B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Parte de
@@ -84,7 +84,7 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 
 ## 5. Supuestos
 
-1. **Reglas de recomendación (Q-04).** En este orden: (a) hay ítems en revisión, secciones sin
+1. **Reglas de recomendación (Q-04, confirmadas para la demo).** En este orden: (a) hay ítems en revisión, secciones sin
    procesar o ningún ítem extraído → `condicionada`; (b) algún ítem habilitante en *no cumple* o
    *cumple parcialmente* → `no_presentarse`; (c) cualquier otra brecha → `presentarse_con_riesgo`;
    (d) sin brechas → `presentarse`.
@@ -106,6 +106,19 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
     caracteres por pregunta, 30 peticiones por minuto a NVIDIA con 5 reintentos, y 3 entregas y
     3600 s por trabajo de análisis. La cuota es una ventana móvil de 24 horas, no un día de
     calendario. Son cifras de partida, no decisiones del equipo: hay que confirmarlas.
+
+### Criterios confirmados para la demo
+
+- HU-B20 envía un ítem automático a revisión por requisito ambiguo, cita no verificada o
+  confianza menor que `REVISION_UMBRAL_CONFIANZA` (0,70 para la demo). Conserva el estado
+  propuesto y registra los motivos. Las revisiones humanas existentes se respetan.
+- HU-B19 calcula la recomendación en código. `ANTHROPIC_MODEL_REDACCION` explica la decisión
+  con referencias a los numerales entregados. El cierre requiere una recomendación y una
+  justificación consolidada para el trabajo.
+- HU-B21 expone `GET /api/licitaciones/{id}/resultado` y `GET /api/licitaciones/{id}/pdf-url`.
+  El resultado activo devuelve 202 con progreso. Un análisis anterior que cerró sin decisión
+  devuelve 409. La matriz no introduce códigos de proceso ni entidades que el backend aún no
+  persiste. El contrato actualizado está en [OpenAPI](openapi.json).
 
 ## 6. Ambigüedades detectadas
 

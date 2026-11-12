@@ -9,11 +9,11 @@ from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import Any
 
-from analizador.models.enums import EstadoLicitacion
 from analizador.pipeline import (
     catalogo,
     citas,
     cobertura,
+    decision,
     evidencia,
     extraccion,
     filtrado,
@@ -112,22 +112,19 @@ async def validar_citas(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("decision")
 async def decidir(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 9): brechas y recomendación por reglas [P-05]. Reglas sin definir (Q-04).
+    await decision.preparar(estado)
     return {}
 
 
 @etapa("justificacion")
 async def justificar(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 10): redactar la justificación con el modelo de Anthropic [P].
+    await decision.justificar(estado)
     return {}
 
 
 @etapa("cierre")
 async def cerrar(estado: EstadoAnalisis) -> dict[str, Any]:
-    # Etapa 11: marcar la licitación como completada. El trabajo lo cierra el worker.
-    await progreso.marcar_licitacion(
-        uuid.UUID(estado["licitacion_id"]), EstadoLicitacion.COMPLETADA
-    )
+    await decision.cerrar(estado)
     return {}
 
 
