@@ -83,6 +83,8 @@ class LicitacionResumen(_Orm):
 class LicitacionCreada(BaseModel):
     licitacion: LicitacionResumen
     trabajo: TrabajoOut
+    # True si el mismo PDF ya había sido cargado en la organización (HU-B07, P-16).
+    duplicada: bool = False
 
 
 class UbicacionOut(_Orm):

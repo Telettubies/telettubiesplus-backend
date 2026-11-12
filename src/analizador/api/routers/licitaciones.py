@@ -1,11 +1,13 @@
 """Licitaciones: carga del pliego (F-03), progreso, resultado y visor (F-04, F-09)."""
 
+import hashlib
 import logging
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -14,7 +16,6 @@ from analizador.core.config import get_settings
 from analizador.integrations import almacenamiento
 from analizador.models import Item, Licitacion, Requisito, Resultado, TrabajoProcesamiento
 from analizador.models.enums import EstadoTrabajo, TipoTrabajo
-from analizador.pipeline import progreso
 from analizador.schemas import (
     LicitacionCreada,
     LicitacionDetalle,
@@ -28,6 +29,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/licitaciones", tags=["licitaciones"])
 
 FIRMA_PDF = b"%PDF-"
+# La cabecera puede ir precedida de bytes ajenos dentro del primer kilobyte del archivo.
+VENTANA_FIRMA = 1024
 
 
 async def obtener_licitacion(
@@ -59,54 +62,152 @@ async def url_del_pdf(licitacion: Licitacion, organizacion_id: uuid.UUID) -> str
 
 
 async def _leer_pdf(archivo: UploadFile) -> bytes:
-    limite = get_settings().max_pdf_bytes
-    contenido = await archivo.read(limite + 1)
-    if len(contenido) > limite:
-        # S-08: límite de tamaño. El límite de páginas se aplicará en la etapa 1.
-        raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "El PDF supera el tamaño máximo")
-    if not contenido.startswith(FIRMA_PDF):
-        # S-09: se verifica el tipo real del archivo, no la extensión ni el content-type.
-        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "El archivo no es un PDF")
+    """Lee el archivo aplicando el límite de tamaño y verificando que sea un PDF.
+
+    S-09: el tipo se comprueba por el contenido, no por la extensión ni el content-type. El PDF
+    no se abre aquí: se procesa solo en el worker, donde también se aplica el límite de páginas.
+    """
+    settings = get_settings()
+    contenido = await archivo.read(settings.max_pdf_bytes + 1)
+    if len(contenido) > settings.max_pdf_bytes:
+        raise HTTPException(
+            status.HTTP_413_CONTENT_TOO_LARGE,
+            f"El PDF supera el tamaño máximo de {settings.max_pdf_mb} MB. "
+            "Suba un archivo más pequeño.",
+        )
+    if FIRMA_PDF not in contenido[:VENTANA_FIRMA]:
+        raise HTTPException(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            "El archivo no es un PDF válido. Suba el pliego en formato PDF.",
+        )
     return contenido
 
 
-@router.post("", response_model=LicitacionCreada, status_code=status.HTTP_202_ACCEPTED)
+async def _analisis_por_hash(
+    session: AsyncSession, organizacion_id: uuid.UUID, hash_pdf: str
+) -> LicitacionCreada | None:
+    """Análisis ya existente del mismo PDF en la organización (P-16), si lo hay."""
+    licitacion = await session.scalar(
+        select(Licitacion).where(
+            Licitacion.organizacion_id == organizacion_id, Licitacion.hash_pdf == hash_pdf
+        )
+    )
+    if licitacion is None:
+        return None
+    trabajo = await session.scalar(
+        select(TrabajoProcesamiento)
+        .where(
+            TrabajoProcesamiento.licitacion_id == licitacion.id,
+            TrabajoProcesamiento.tipo == TipoTrabajo.ANALISIS,
+        )
+        .order_by(TrabajoProcesamiento.creado_en.desc())
+    )
+    if trabajo is None:
+        raise RuntimeError(f"La licitación {licitacion.id} no tiene trabajo de análisis")
+    return LicitacionCreada(
+        licitacion=LicitacionResumen.model_validate(licitacion),
+        trabajo=TrabajoOut.model_validate(trabajo),
+        duplicada=True,
+    )
+
+
+async def _descartar_objeto(clave: str) -> None:
+    """Compensación: retira del almacén un PDF cuya licitación no llegó a quedar registrada."""
+    try:
+        await almacenamiento.eliminar(clave)
+    except almacenamiento.AlmacenamientoError:
+        logger.error("No se pudo retirar del almacén el objeto %s", clave)
+
+
+@router.post(
+    "",
+    response_model=LicitacionCreada,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        status.HTTP_200_OK: {
+            "model": LicitacionCreada,
+            "description": "El mismo PDF ya fue analizado en la organización: se devuelve ese "
+            "análisis (`duplicada: true`) sin iniciar uno nuevo.",
+        }
+    },
+)
 async def cargar_pliego(
     contexto: ContextoDep,
     session: SessionDep,
     publicador: PublicadorDep,
+    respuesta: Response,
     archivo: Annotated[UploadFile, File(description="Pliego en PDF")],
     titulo: Annotated[str | None, Form(max_length=300)] = None,
 ) -> LicitacionCreada:
-    contenido = await _leer_pdf(archivo)
-    nombre_archivo = (archivo.filename or "pliego.pdf")[:300]
-    clave = almacenamiento.nueva_clave_pliego(contexto.organizacion_id)
-    await almacenamiento.subir_pdf(clave, contenido)
+    """Guarda el pliego, crea la licitación y su trabajo y encola el análisis (HU-B07).
 
+    Si falla el almacén, la base de datos o la cola, se deshace lo ya hecho: no queda una
+    licitación sin trabajo ni un trabajo sin mensaje.
+    """
+    contenido = await _leer_pdf(archivo)
+    hash_pdf = hashlib.sha256(contenido).hexdigest()
+
+    existente = await _analisis_por_hash(session, contexto.organizacion_id, hash_pdf)
+    if existente is not None:
+        respuesta.status_code = status.HTTP_200_OK
+        return existente
+
+    clave = almacenamiento.nueva_clave_pliego(contexto.organizacion_id)
+    try:
+        await almacenamiento.subir_pdf(clave, contenido)
+    except almacenamiento.AlmacenamientoError as exc:
+        logger.error("No se pudo guardar el pliego: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "No se pudo guardar el archivo. Intente de nuevo en unos minutos.",
+        ) from exc
+
+    nombre_archivo = (archivo.filename or "pliego.pdf")[:300]
     licitacion = Licitacion(
         organizacion_id=contexto.organizacion_id,
         creado_por=contexto.usuario.usuario_id,
         titulo=titulo or nombre_archivo,
         nombre_archivo=nombre_archivo,
         storage_key=clave,
+        hash_pdf=hash_pdf,
     )
-    session.add(licitacion)
-    await session.flush()
-    trabajo = TrabajoProcesamiento(
-        organizacion_id=contexto.organizacion_id,
-        tipo=TipoTrabajo.ANALISIS,
-        licitacion_id=licitacion.id,
-    )
-    session.add(trabajo)
-    await session.commit()
+    try:
+        # Licitación y trabajo en la misma transacción: nunca existe una sin el otro.
+        session.add(licitacion)
+        await session.flush()
+        trabajo = TrabajoProcesamiento(
+            organizacion_id=contexto.organizacion_id,
+            tipo=TipoTrabajo.ANALISIS,
+            licitacion_id=licitacion.id,
+        )
+        session.add(trabajo)
+        await session.commit()
+    except IntegrityError:
+        # Otra petición cargó el mismo PDF a la vez: se devuelve su análisis.
+        await session.rollback()
+        await _descartar_objeto(clave)
+        existente = await _analisis_por_hash(session, contexto.organizacion_id, hash_pdf)
+        if existente is None:
+            raise
+        respuesta.status_code = status.HTTP_200_OK
+        return existente
+    except Exception:
+        await session.rollback()
+        await _descartar_objeto(clave)
+        raise
 
     # Se publica después del commit para que el worker encuentre el trabajo (ADR-015).
     try:
         await publicador.publicar(TipoTrabajo.ANALISIS, trabajo.id)
     except Exception as exc:
         logger.exception("No se pudo encolar el trabajo %s", trabajo.id)
-        await progreso.fallar(trabajo.id, "No se pudo encolar el análisis")
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Cola no disponible") from exc
+        await session.delete(licitacion)  # el trabajo cae por la clave foránea
+        await session.commit()
+        await _descartar_objeto(clave)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "No se pudo iniciar el análisis. Intente de nuevo en unos minutos.",
+        ) from exc
 
     await session.refresh(licitacion)
     await session.refresh(trabajo)
@@ -185,10 +286,22 @@ async def reintentar(
     )
     if trabajo is None or trabajo.estado != EstadoTrabajo.FALLIDO:
         raise HTTPException(status.HTTP_409_CONFLICT, "No hay un análisis fallido que reintentar")
+    error_previo = trabajo.error
     trabajo.estado = EstadoTrabajo.EN_COLA
     trabajo.error = None
     await session.commit()
-    await publicador.publicar(TipoTrabajo.ANALISIS, trabajo.id)
+    try:
+        await publicador.publicar(TipoTrabajo.ANALISIS, trabajo.id)
+    except Exception as exc:
+        # Sin mensaje en la cola el trabajo no puede quedar "en cola": vuelve a fallido.
+        logger.exception("No se pudo reencolar el trabajo %s", trabajo.id)
+        trabajo.estado = EstadoTrabajo.FALLIDO
+        trabajo.error = error_previo
+        await session.commit()
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "No se pudo iniciar el análisis. Intente de nuevo en unos minutos.",
+        ) from exc
     await session.refresh(trabajo)
     return trabajo
 

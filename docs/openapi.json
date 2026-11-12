@@ -167,6 +167,11 @@
       },
       "LicitacionCreada": {
         "properties": {
+          "duplicada": {
+            "default": false,
+            "title": "Duplicada",
+            "type": "boolean"
+          },
           "licitacion": {
             "$ref": "#/components/schemas/LicitacionResumen"
           },
@@ -969,6 +974,7 @@
         ]
       },
       "post": {
+        "description": "Guarda el pliego, crea la licitación y su trabajo y encola el análisis (HU-B07).\n\nSi falla el almacén, la base de datos o la cola, se deshace lo ya hecho: no queda una\nlicitación sin trabajo ni un trabajo sin mensaje.",
         "operationId": "cargar_pliego_api_licitaciones_post",
         "parameters": [
           {
@@ -1000,6 +1006,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicitacionCreada"
+                }
+              }
+            },
+            "description": "El mismo PDF ya fue analizado en la organización: se devuelve ese análisis (`duplicada: true`) sin iniciar uno nuevo."
+          },
           "202": {
             "content": {
               "application/json": {
