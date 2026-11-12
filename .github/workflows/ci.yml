@@ -155,7 +155,7 @@ jobs:
           sed -e "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" \
               -e "s/^RABBITMQ_PASSWORD=.*/RABBITMQ_PASSWORD=$(openssl rand -hex 16)/" \
               -e 's/^API_DOMAIN=.*/API_DOMAIN=:80/' \
-              -e 's/^S3_BUCKET=.*/S3_BUCKET=ci/' \
+              -e 's/^SUPABASE_STORAGE_BUCKET=.*/SUPABASE_STORAGE_BUCKET=ci/' \
               -e 's#^SUPABASE_URL=.*#SUPABASE_URL=https://ci.supabase.co#' \
               -e 's/^BACKEND_IMAGE=.*/BACKEND_IMAGE=analizador-backend/' \
               -e 's/^BACKEND_TAG=.*/BACKEND_TAG=ci/' \

@@ -43,8 +43,8 @@ class Licitacion(UUIDPk, Timestamps, Base):
     creado_por: Mapped[uuid.UUID]  # usuario_id de Supabase
     titulo: Mapped[str] = mapped_column(String(300))
     nombre_archivo: Mapped[str] = mapped_column(String(300))
-    # Nombre aleatorio bajo prefijo de organización (S-09).
-    s3_key: Mapped[str] = mapped_column(String(1024))
+    # Clave del PDF en el almacén: nombre aleatorio bajo el prefijo de la organización (S-09).
+    storage_key: Mapped[str] = mapped_column(String(1024))
     estado: Mapped[EstadoLicitacion] = mapped_column(
         str_enum(EstadoLicitacion, "estado_licitacion"), default=EstadoLicitacion.PENDIENTE
     )

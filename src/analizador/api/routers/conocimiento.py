@@ -25,6 +25,6 @@ async def listar(contexto: ContextoDep, session: SessionDep) -> list[FuenteConoc
 
 @router.post("/fuentes", status_code=status.HTTP_501_NOT_IMPLEMENTED)
 async def cargar(contexto: AdminDep) -> None:
-    # TODO(F-02): guardar la fuente (S3 y/o JSON), crear TrabajoProcesamiento de tipo
+    # TODO(F-02): guardar la fuente (JSON), crear TrabajoProcesamiento de tipo
     # INDEXACION y publicarlo en la cola de indexación. Bloqueado por Q-05.
     raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "Carga de conocimiento pendiente de Q-05")

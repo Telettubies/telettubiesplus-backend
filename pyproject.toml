@@ -8,7 +8,6 @@ dependencies = [
     "alembic>=1.20.1",
     "anthropic>=2.8.0",
     "asyncpg>=0.32.0",
-    "boto3>=1.44.1",
     "fastapi>=0.162.5",
     "httpx>=0.28.1",
     "langgraph>=1.2.20",
@@ -35,7 +34,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "boto3-stubs[s3]>=1.44.1",
     "mypy>=2.4.1",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",
