@@ -29,6 +29,7 @@ from analizador.db.base import Base, Timestamps, UUIDPk
 from analizador.models.enums import (
     EstadoCumplimiento,
     EstadoLicitacion,
+    OrigenPagina,
     PrecisionUbicacion,
     TipoRequisito,
     str_enum,
@@ -63,6 +64,22 @@ class Licitacion(UUIDPk, Timestamps, Base):
     requisitos: Mapped[list["Requisito"]] = relationship(
         back_populates="licitacion", cascade="all, delete-orphan"
     )
+
+
+class PaginaPliego(UUIDPk, Timestamps, Base):
+    """Texto de una página del pliego tal como se leyó en la etapa 1 (HU-B10)."""
+
+    __tablename__ = "paginas"
+    __table_args__ = (UniqueConstraint("licitacion_id", "numero"),)
+
+    licitacion_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("licitaciones.id", ondelete="CASCADE"), index=True
+    )
+    numero: Mapped[int] = mapped_column(Integer)  # desde 1
+    texto: Mapped[str] = mapped_column(Text)
+    origen: Mapped[OrigenPagina] = mapped_column(str_enum(OrigenPagina, "origen_pagina"))
+    # Cajas de las palabras del OCR en coordenadas relativas (0..1), para HU-B15.
+    palabras: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
 
 
 class Seccion(UUIDPk, Timestamps, Base):

@@ -100,3 +100,12 @@ class TipoUso(StrEnum):
     """Acciones que cuentan para las cuotas por organización (S-08, HU-B26)."""
 
     PREGUNTA_CHAT = "pregunta_chat"
+
+
+class OrigenPagina(StrEnum):
+    """Cómo se obtuvo el texto de una página del pliego (HU-B10)."""
+
+    DIGITAL = "digital"  # texto extraíble del PDF
+    OCR = "ocr"  # página escaneada leída con Tesseract; conserva las cajas de las palabras
+    VISION = "vision"  # transcrita por el modelo con visión; sin cajas
+    NO_LEIDA = "no_leida"  # ni el OCR ni la visión lograron texto legible

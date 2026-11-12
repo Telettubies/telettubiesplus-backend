@@ -4,6 +4,7 @@ from analizador.models.conocimiento import EmbeddingCache, Fragmento, FuenteCono
 from analizador.models.licitacion import (
     Item,
     Licitacion,
+    PaginaPliego,
     Requisito,
     Resultado,
     Revision,
@@ -23,6 +24,7 @@ __all__ = [
     "Licitacion",
     "Miembro",
     "Organizacion",
+    "PaginaPliego",
     "Requisito",
     "Resultado",
     "Revision",

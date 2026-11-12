@@ -4,7 +4,8 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import update
+from sqlalchemy import cast, func, update
+from sqlalchemy.dialects.postgresql import JSONB
 
 from analizador.db.session import get_sessionmaker
 from analizador.models import Licitacion, TrabajoProcesamiento
@@ -32,6 +33,18 @@ async def registrar_etapa(trabajo_id: uuid.UUID, etapa: str, progreso: int) -> N
             update(TrabajoProcesamiento)
             .where(TrabajoProcesamiento.id == trabajo_id, TrabajoProcesamiento.progreso <= progreso)
             .values(etapa_actual=etapa, progreso=progreso)
+        )
+        await session.commit()
+
+
+async def anotar_detalle(trabajo_id: uuid.UUID, **cifras: Any) -> None:
+    """Añade cifras al detalle del trabajo sin borrar las que anotaron otras etapas."""
+    async with get_sessionmaker()() as session:
+        actual = func.coalesce(TrabajoProcesamiento.detalle, cast({}, JSONB))
+        await session.execute(
+            update(TrabajoProcesamiento)
+            .where(TrabajoProcesamiento.id == trabajo_id)
+            .values(detalle=actual.op("||")(cast(cifras, JSONB)))
         )
         await session.commit()
 

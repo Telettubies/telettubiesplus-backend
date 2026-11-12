@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     anthropic_model_extraccion: str | None = None
     anthropic_model_verificacion: str | None = None
     anthropic_model_redaccion: str | None = None
+    # Modelo con visión que transcribe las páginas que el OCR no logra leer (P-09).
+    anthropic_model_ocr: str | None = None
 
     # --- NVIDIA (C-09) ---
     nvidia_api_key: SecretStr | None = None
@@ -65,6 +67,16 @@ class Settings(BaseSettings):
     nvidia_max_reintentos: int = Field(default=5, ge=0)
     nvidia_espera_base_segundos: float = Field(default=2.0, gt=0)
     nvidia_espera_maxima_segundos: float = Field(default=60.0, gt=0)
+
+    # --- Lectura y OCR (HU-B10, P-09) ---
+    ocr_idioma: str = "spa"
+    ocr_dpi: int = Field(default=200, ge=72, le=400)
+    # Una página con menos caracteres extraíbles se trata como escaneada.
+    ocr_min_caracteres: int = Field(default=20, ge=0)
+    # Confianza media (0-100) de Tesseract por debajo de la cual el texto no se da por legible.
+    ocr_confianza_minima: float = Field(default=50, ge=0, le=100)
+    # Páginas por pliego que como máximo se envían al modelo con visión (RC-02).
+    ocr_vision_max_paginas: int = Field(default=30, ge=0)
 
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
@@ -84,6 +96,7 @@ class Settings(BaseSettings):
         "anthropic_model_extraccion",
         "anthropic_model_verificacion",
         "anthropic_model_redaccion",
+        "anthropic_model_ocr",
         "nvidia_model_filtro",
         "nvidia_model_embeddings",
         "nvidia_model_chat",
