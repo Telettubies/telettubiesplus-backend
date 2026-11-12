@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas del pipeline (`pipeline/etapas.py`): todas registran progreso pero no procesan nada.
+- Etapas 2 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -180,3 +180,21 @@ en [docs/ejemplos/base_conocimiento.json](docs/ejemplos/base_conocimiento.json).
   texto ya vectorizado no se reenvía y el índice se reemplaza completo o no se toca.
 - `GET /api/conocimiento` muestra el resumen y el estado de la indexación, y
   `POST /api/conocimiento/indexacion` la vuelve a lanzar si falló.
+
+## Lectura del pliego y OCR (HU-B10)
+
+La etapa 1 lee el PDF página por página, solo en el worker:
+
+1. **Página digital:** texto en orden de lectura con PyMuPDF; las tablas con líneas se extraen con
+   pdfplumber y se insertan en su sitio como filas `celda | celda`.
+2. **Página escaneada** (sin texto extraíble y con imágenes): Tesseract en español. Se guardan las
+   cajas de cada palabra para poder resaltar el requisito en el visor.
+3. **Tesseract no logra texto legible:** Claude con visión transcribe la página, si
+   `ANTHROPIC_MODEL_OCR` está configurado y sin pasar de `OCR_VISION_MAX_PAGINAS` por pliego.
+4. **Tampoco:** la página queda marcada como no leída y el trabajo lo informa en `detalle`.
+
+El pliego que supera `MAX_PDF_PAGINAS` falla en esta etapa con un mensaje que indica el límite.
+La imagen Docker incluye `tesseract-ocr` y `tesseract-ocr-spa`. En local, sin el idioma español
+instalado, la prueba de Tesseract real se omite (en el CI se ejecuta).
+
+PyMuPDF tiene licencia AGPL (riesgo R-13 del DAS si el proyecto continúa tras la hackatón).

@@ -82,6 +82,10 @@ jobs:
       - name: Instalar dependencias
         run: uv sync --locked
 
+      # Para que la prueba de OCR real (HU-B10) se ejecute en lugar de omitirse.
+      - name: Instalar Tesseract con español
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa
+
       - name: Pytest
         run: uv run pytest --junitxml=reporte-pruebas.xml
 

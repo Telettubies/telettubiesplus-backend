@@ -11,7 +11,7 @@ from functools import wraps
 from typing import Any
 
 from analizador.models.enums import EstadoLicitacion
-from analizador.pipeline import catalogo, progreso
+from analizador.pipeline import catalogo, lectura, progreso
 from analizador.pipeline.estado import EstadoAnalisis
 
 Nodo = Callable[[EstadoAnalisis], Awaitable[dict[str, Any]]]
@@ -36,8 +36,8 @@ def etapa(clave: str) -> Callable[[Nodo], Nodo]:
 
 @etapa("lectura_pdf")
 async def leer_pdf(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 1): texto por página y tablas. Librería [P] (PyMuPDF/pdfplumber; ver R-13
-    # por la licencia AGPL de PyMuPDF). OCR de páginas escaneadas: tecnología TBD (P-09, C-11).
+    # Etapa 1: texto y tablas por página; OCR y visión para las escaneadas (HU-B10).
+    await lectura.ejecutar(estado)
     return {}
 
 
