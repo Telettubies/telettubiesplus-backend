@@ -44,6 +44,20 @@ async def obtener_licitacion(
     return licitacion
 
 
+async def url_del_pdf(licitacion: Licitacion, organizacion_id: uuid.UUID) -> str:
+    """URL temporal del PDF. Solo se firma un objeto bajo el prefijo de la organización (S-03)."""
+    if not almacenamiento.pertenece_a(licitacion.storage_key, organizacion_id):
+        logger.error("La licitación %s apunta a un objeto de otro prefijo", licitacion.id)
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Licitación no encontrada")
+    try:
+        return await almacenamiento.url_temporal(licitacion.storage_key)
+    except almacenamiento.AlmacenamientoError as exc:
+        logger.error("No se pudo firmar la URL de la licitación %s: %s", licitacion.id, exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "El archivo no está disponible en este momento"
+        ) from exc
+
+
 async def _leer_pdf(archivo: UploadFile) -> bytes:
     limite = get_settings().max_pdf_bytes
     contenido = await archivo.read(limite + 1)
@@ -134,7 +148,7 @@ async def detalle(
     return LicitacionDetalle(
         **resumen.model_dump(),
         justificacion=licitacion.justificacion,
-        url_pdf=await almacenamiento.url_temporal(licitacion.storage_key),
+        url_pdf=await url_del_pdf(licitacion, contexto.organizacion_id),
         requisitos=[RequisitoOut.model_validate(r) for r in requisitos],
     )
 
