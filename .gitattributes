@@ -1,0 +1,9 @@
+# Finales de línea (decisión del equipo, 2026-11-12): el repositorio guarda LF, también en Windows.
+* text=auto eol=lf
+
+# Binarios
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
