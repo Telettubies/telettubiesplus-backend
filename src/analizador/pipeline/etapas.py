@@ -1,8 +1,7 @@
-"""Etapas del pipeline de análisis (sección 5.3).
+"""Etapas del pipeline de análisis (sección 5.3), como nodos del grafo.
 
-Todas son STUBS: registran su avance en PostgreSQL y no hacen nada más. Cada TODO indica
-la responsabilidad, el ejecutor y el estado de la decisión según el DAS (v0.3).
-Reparto (10.5): etapas 1-5 y 4b → persona 2; etapas 6-10 → persona 3.
+Cada nodo registra su avance en PostgreSQL (decorador `etapa`) y delega en el módulo de su
+etapa. Las que todavía son stubs llevan un TODO con su responsabilidad y la decisión del DAS.
 """
 
 import uuid
@@ -17,6 +16,7 @@ from analizador.pipeline import (
     extraccion,
     filtrado,
     lectura,
+    localizacion,
     progreso,
     secciones,
 )
@@ -72,8 +72,8 @@ async def extraer(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("localizacion")
 async def localizar(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 4b): buscar el texto literal de cada requisito en las páginas de su sección
-    # y guardar `ubicaciones_pliego` (P-21, RF-26). Degradar a aproximada o solo página.
+    # Etapa 4b: página y zonas a resaltar de cada requisito, calculadas por código (HU-B15).
+    await localizacion.ejecutar(estado)
     return {}
 
 
@@ -81,6 +81,8 @@ async def localizar(estado: EstadoAnalisis) -> dict[str, Any]:
 async def comprobar_cobertura(estado: EstadoAnalisis) -> dict[str, Any]:
     # Etapa 5: reintentar lo que falte y dejar identificado lo que no se pudo procesar (HU-B14).
     await cobertura.ejecutar(estado)
+    # Los requisitos de las secciones recuperadas en los reintentos aún no tienen ubicación.
+    await localizacion.ejecutar(estado)
     return {}
 
 
