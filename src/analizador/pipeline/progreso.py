@@ -22,7 +22,18 @@ async def actualizar_trabajo(trabajo_id: uuid.UUID, **campos: Any) -> None:
 
 
 async def registrar_etapa(trabajo_id: uuid.UUID, etapa: str, progreso: int) -> None:
-    await actualizar_trabajo(trabajo_id, etapa_actual=etapa, progreso=progreso)
+    """Registra la etapa en curso. El progreso nunca retrocede (HU-B08).
+
+    Si una etapa anterior vuelve a ejecutarse (reanudación sin checkpoint, entrega duplicada),
+    el trabajo conserva la etapa y el porcentaje más avanzados que ya había alcanzado.
+    """
+    async with get_sessionmaker()() as session:
+        await session.execute(
+            update(TrabajoProcesamiento)
+            .where(TrabajoProcesamiento.id == trabajo_id, TrabajoProcesamiento.progreso <= progreso)
+            .values(etapa_actual=etapa, progreso=progreso)
+        )
+        await session.commit()
 
 
 async def marcar_licitacion(licitacion_id: uuid.UUID, estado: EstadoLicitacion) -> None:
