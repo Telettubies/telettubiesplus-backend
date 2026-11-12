@@ -32,7 +32,7 @@ Convenciones heredadas del andamiaje: SQLAlchemy 2 asíncrono, Alembic, enumerac
 | Contratos de datos | Se definen en `src/analizador/contratos/` con un JSON sintético de ejemplo | P-18 (no aprobada) |
 | Lectura de PDF | PyMuPDF (texto, coordenadas, render) y pdfplumber (tablas) | Etapa 1 [P]; R-13 por la licencia AGPL |
 | OCR | Tesseract en español; Claude con visión como respaldo. Se implementa dentro de HU-B10 | P-09 (no aprobada) |
-| Reglas de recomendación | Estricta (ver sección 5) | P-05, Q-04 (no aprobadas) |
+| Reglas de recomendación | Estricta para la demo (ver sección 5) | P-05, Q-04, confirmadas para la demo |
 | Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST | **Reemplaza ADR-005 (AWS S3)** |
 
 ## 3. Orden de implementación y seguimiento
@@ -61,7 +61,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 18 | HU-B17 | Verificar el cumplimiento de cada ítem | hecha | sar | 073cac9, ee945fe | #23 |
 | 19 | HU-B18 | Validar que las citas existen en la fuente | hecha | sar | ab07bd9, a17aa67 | #24 |
 | 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | hecha | laqg | 325aa93, f023046 | |
-| 21 | HU-B19 | Calcular brechas, recomendación y justificación | pendiente | sar | | |
+| 21 | HU-B19 | Calcular brechas, recomendación y justificación | hecha | laqg | 8db204a, eb5ccf8 | |
 | 22 | HU-B21 | Entregar el resultado y el acceso al PDF | pendiente | sar | | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
 
@@ -84,7 +84,7 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 
 ## 5. Supuestos
 
-1. **Reglas de recomendación (Q-04).** En este orden: (a) hay ítems en revisión, secciones sin
+1. **Reglas de recomendación (Q-04, confirmadas para la demo).** En este orden: (a) hay ítems en revisión, secciones sin
    procesar o ningún ítem extraído → `condicionada`; (b) algún ítem habilitante en *no cumple* o
    *cumple parcialmente* → `no_presentarse`; (c) cualquier otra brecha → `presentarse_con_riesgo`;
    (d) sin brechas → `presentarse`.
@@ -112,6 +112,9 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 - HU-B20 envía un ítem automático a revisión por requisito ambiguo, cita no verificada o
   confianza menor que `REVISION_UMBRAL_CONFIANZA` (0,70 para la demo). Conserva el estado
   propuesto y registra los motivos. Las revisiones humanas existentes se respetan.
+- HU-B19 calcula la recomendación en código. `ANTHROPIC_MODEL_REDACCION` explica la decisión
+  con referencias a los numerales entregados. El cierre requiere una recomendación y una
+  justificación consolidada para el trabajo.
 
 ## 6. Ambigüedades detectadas
 
