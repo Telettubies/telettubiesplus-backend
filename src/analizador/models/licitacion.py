@@ -19,6 +19,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -36,6 +37,8 @@ from analizador.models.enums import (
 
 class Licitacion(UUIDPk, Timestamps, Base):
     __tablename__ = "licitaciones"
+    # Un mismo PDF se analiza una sola vez por organización (HU-B07, P-16).
+    __table_args__ = (UniqueConstraint("organizacion_id", "hash_pdf"),)
 
     organizacion_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizaciones.id", ondelete="CASCADE"), index=True
@@ -45,6 +48,8 @@ class Licitacion(UUIDPk, Timestamps, Base):
     nombre_archivo: Mapped[str] = mapped_column(String(300))
     # Clave del PDF en el almacén: nombre aleatorio bajo el prefijo de la organización (S-09).
     storage_key: Mapped[str] = mapped_column(String(1024))
+    # SHA-256 del PDF en hexadecimal. Nulo en licitaciones anteriores a esta columna.
+    hash_pdf: Mapped[str | None] = mapped_column(String(64))
     estado: Mapped[EstadoLicitacion] = mapped_column(
         str_enum(EstadoLicitacion, "estado_licitacion"), default=EstadoLicitacion.PENDIENTE
     )
