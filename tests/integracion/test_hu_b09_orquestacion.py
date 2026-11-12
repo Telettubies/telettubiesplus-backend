@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from analizador.core.config import get_settings
 from analizador.messaging import topologia
-from analizador.messaging.mensajes import MensajeTrabajo
 from analizador.models import Licitacion, TrabajoProcesamiento
 from analizador.models.enums import EstadoLicitacion, EstadoTrabajo, TipoTrabajo
 from analizador.pipeline import catalogo, etapas, grafo
@@ -25,7 +24,7 @@ from analizador.pipeline.errores import AnalisisError
 from analizador.pipeline.estado import EstadoAnalisis
 from analizador.worker import handlers
 from analizador.worker import main as worker
-from tests.apoyo import Identidad, crear_organizacion
+from tests.apoyo import Identidad, MensajeFalso, crear_organizacion, mensaje_de
 
 ORDEN_DAS = [
     "lectura_pdf",
@@ -41,25 +40,6 @@ ORDEN_DAS = [
     "justificacion",
     "cierre",
 ]
-
-
-@dataclass
-class MensajeFalso:
-    body: bytes
-    confirmado: bool = False
-    rechazado: bool = False
-    reencolado: bool | None = None
-
-    async def ack(self) -> None:
-        self.confirmado = True
-
-    async def reject(self, requeue: bool = False) -> None:
-        self.rechazado = True
-        self.reencolado = requeue
-
-
-def _mensaje(trabajo_id: uuid.UUID) -> MensajeFalso:
-    return MensajeFalso(MensajeTrabajo(trabajo_id=trabajo_id).model_dump_json().encode())
 
 
 @dataclass
@@ -115,7 +95,7 @@ async def _trabajo_en_cola(sesion: AsyncSession, quien: Identidad) -> TrabajoPro
 
 
 async def _procesar(trabajo: TrabajoProcesamiento, grafo_analisis: Any) -> MensajeFalso:
-    mensaje = _mensaje(trabajo.id)
+    mensaje = mensaje_de(trabajo.id)
     await handlers.procesar(mensaje, TipoTrabajo.ANALISIS, grafo_analisis)  # type: ignore[arg-type]
     return mensaje
 
@@ -203,7 +183,7 @@ async def test_el_mensaje_se_confirma_solo_al_terminar(
     sesion: AsyncSession, revisor: Identidad
 ) -> None:
     trabajo = await _trabajo_en_cola(sesion, revisor)
-    mensaje = _mensaje(trabajo.id)
+    mensaje = mensaje_de(trabajo.id)
     confirmado_durante: list[bool] = []
 
     async def mirar(_estado: EstadoAnalisis) -> None:
@@ -432,7 +412,7 @@ async def test_la_reentrega_tras_una_caida_reanuda_donde_quedo(
     prueba = EtapasDePrueba(al_ejecutar={"localizacion": quedarse_colgado})
     grafo_analisis = prueba.grafo()
 
-    interrumpido = _mensaje(trabajo.id)
+    interrumpido = mensaje_de(trabajo.id)
     tarea = asyncio.create_task(
         handlers.procesar(interrumpido, TipoTrabajo.ANALISIS, grafo_analisis)  # type: ignore[arg-type]
     )
