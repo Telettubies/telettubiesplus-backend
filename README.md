@@ -138,5 +138,14 @@ src/analizador/
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija hasta decidir el
   modelo de embeddings (P-10).
-- Política de reintentos automáticos: hoy un fallo va a la DLQ y se reintenta con
-  `POST /api/licitaciones/{id}/reintentar`.
+
+## Fallos y reintentos del análisis (HU-B09)
+
+- El worker toma un mensaje a la vez y lo confirma a RabbitMQ solo cuando el trabajo termina.
+- Si una etapa falla, el trabajo queda `fallido` con la etapa en que falló y un mensaje para el
+  usuario; el mensaje va a la cola `analizador.fallidos` y **no se reintenta solo**.
+- `POST /api/licitaciones/{id}/reintentar` lo vuelve a encolar: con el checkpointer (P-08) el
+  análisis continúa desde la última etapa completada, sin repetir llamadas ya pagadas.
+- Si el worker se detiene a mitad, RabbitMQ reentrega el mensaje y el análisis se reanuda. Tras
+  `PIPELINE_MAX_INTENTOS` entregas, o al superar `PIPELINE_TIMEOUT_SEGUNDOS`, el trabajo se da
+  por fallido.

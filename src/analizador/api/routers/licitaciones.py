@@ -345,9 +345,10 @@ async def reintentar(
     )
     if trabajo is None or trabajo.estado != EstadoTrabajo.FALLIDO:
         raise HTTPException(status.HTTP_409_CONFLICT, "No hay un análisis fallido que reintentar")
-    error_previo = trabajo.error
+    error_previo, intentos_previos = trabajo.error, trabajo.intentos
     trabajo.estado = EstadoTrabajo.EN_COLA
     trabajo.error = None
+    trabajo.intentos = 0  # el límite de entregas es por reintento, no de por vida
     await session.commit()
     try:
         await publicador.publicar(TipoTrabajo.ANALISIS, trabajo.id)
@@ -355,7 +356,7 @@ async def reintentar(
         # Sin mensaje en la cola el trabajo no puede quedar "en cola": vuelve a fallido.
         logger.exception("No se pudo reencolar el trabajo %s", trabajo.id)
         trabajo.estado = EstadoTrabajo.FALLIDO
-        trabajo.error = error_previo
+        trabajo.error, trabajo.intentos = error_previo, intentos_previos
         await session.commit()
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
