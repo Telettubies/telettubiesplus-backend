@@ -109,6 +109,11 @@ class Settings(BaseSettings):
     # Ítems que se envían a Claude a la vez en la verificación.
     verificacion_concurrencia: int = Field(default=3, gt=0)
 
+    # --- Validación de citas y revisión (HU-B18, HU-B20) ---
+    # Similitud mínima (0 a 100) entre una cita y su fuente para darla por verificada.
+    # Valor provisional (Q-14).
+    citas_umbral_similitud: float = Field(default=90, ge=0, le=100)
+
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
     # Tiempo máximo de un trabajo antes de darlo por fallido (S-09). Valor por confirmar.

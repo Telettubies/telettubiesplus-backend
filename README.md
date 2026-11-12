@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 8 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
+- Etapas 9 y 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -303,3 +303,15 @@ La etapa 7 deja cada ítem con un estado, su soporte y su faltante (tabla `resul
   los contratos porque el requisito no indica un código UNSPSC.
 
 `resultados.regla` guarda qué comparación o qué modelo produjo cada estado.
+
+## Validación de citas (HU-B18)
+
+La etapa 8 comprueba en código, sin modelos, que ninguna evidencia sea inventada
+(`pipeline/citas.py`). Cada cita de un ítem cualitativo se compara con el texto del fragmento
+que el modelo dijo usar, ignorando tildes, mayúsculas, espacios y puntuación (rapidfuzz). Con
+una similitud menor que `CITAS_UMBRAL_SIMILITUD` la evidencia queda `verificada: false` y el
+ítem pasa a revisión: ninguna cita sin verificar sostiene un «cumple». Una cita más larga que
+su fuente se compara entera, para que añadir texto a un fragmento real no cuente como válido.
+
+El texto literal de cada requisito se compara igual con su sección del pliego;
+`requisitos.texto_verificado = false` señala una posible reformulación del modelo.
