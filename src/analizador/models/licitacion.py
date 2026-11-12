@@ -98,6 +98,8 @@ class Seccion(UUIDPk, Timestamps, Base):
     texto: Mapped[str] = mapped_column(Text)
     # Etapa 3 (filtrado): None = aún no evaluada.
     tiene_requisitos: Mapped[bool | None]
+    # Por qué el filtro la descartó o la dejó pasar; consultable (HU-B12).
+    motivo_filtro: Mapped[str | None] = mapped_column(Text)
     # Etapa 5 (comprobación de cobertura, ADR-012).
     procesada: Mapped[bool] = mapped_column(default=False)
 
