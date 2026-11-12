@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 7 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
+- Etapas 8 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -282,3 +282,24 @@ el texto del fragmento y su fuente.
   de la búsqueda.
 - Sin fragmentos relevantes, o sin base indexada, el ítem sigue a verificación sin evidencia.
 - Los ítems numéricos no buscan evidencia: se verifican contra los datos estructurados.
+
+## Verificación de cumplimiento (HU-B17)
+
+La etapa 7 deja cada ítem con un estado, su soporte y su faltante (tabla `resultados`).
+
+- **Ítems numéricos**, en código (`pipeline/verificacion_numerica.py`): indicadores financieros
+  del último año cargado, valor y número de contratos de experiencia, y códigos UNSPSC. La
+  evidencia es el dato exacto usado. Lo que el pliego exige en SMMLV se convierte con
+  `SMMLV_COP`. La experiencia cuenta los contratos clasificados en los códigos UNSPSC que exige
+  el mismo requisito, por su porcentaje de participación.
+- **Ítems cualitativos**, con Claude (`ANTHROPIC_MODEL_VERIFICACION`): recibe el ítem y la
+  evidencia recuperada, delimitados como datos, y devuelve estado, fragmento, cita literal,
+  faltante y confianza. Un ítem sin evidencia recuperada no cumple, sin gastar una llamada.
+- **Invariantes garantizados en código:** todo estado distinto de «cumple» lleva faltante; todo
+  «cumple» lleva evidencia. Una respuesta que los viola se reintenta una vez y, si insiste, el
+  ítem queda para revisión humana sin estado favorable.
+- **Revisión en lugar de suponer:** unidad que no corresponde al campo, SMMLV sin configurar,
+  cobertura de intereses indeterminada, o experiencia que alcanza lo exigido solo sumando todos
+  los contratos porque el requisito no indica un código UNSPSC.
+
+`resultados.regla` guarda qué comparación o qué modelo produjo cada estado.
