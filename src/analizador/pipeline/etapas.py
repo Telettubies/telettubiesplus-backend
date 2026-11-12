@@ -11,7 +11,15 @@ from functools import wraps
 from typing import Any
 
 from analizador.models.enums import EstadoLicitacion
-from analizador.pipeline import catalogo, extraccion, filtrado, lectura, progreso, secciones
+from analizador.pipeline import (
+    catalogo,
+    cobertura,
+    extraccion,
+    filtrado,
+    lectura,
+    progreso,
+    secciones,
+)
 from analizador.pipeline.estado import EstadoAnalisis
 
 Nodo = Callable[[EstadoAnalisis], Awaitable[dict[str, Any]]]
@@ -71,7 +79,8 @@ async def localizar(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("comprobacion_cobertura")
 async def comprobar_cobertura(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 5): verificar que todas las secciones quedaron `procesada` (ADR-012, N-04).
+    # Etapa 5: reintentar lo que falte y dejar identificado lo que no se pudo procesar (HU-B14).
+    await cobertura.ejecutar(estado)
     return {}
 
 

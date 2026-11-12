@@ -87,6 +87,8 @@ class Settings(BaseSettings):
 
     # Secciones que se envían a Claude a la vez en la extracción (HU-B13).
     extraccion_concurrencia: int = Field(default=3, gt=0)
+    # Veces que la comprobación de cobertura reintenta las secciones sin procesar (HU-B14).
+    cobertura_max_reintentos: int = Field(default=2, ge=0)
 
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
