@@ -86,8 +86,19 @@ La consola de RabbitMQ queda en `127.0.0.1:15672` de la instancia: `ssh -L 15672
 ```bash
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
-uv run pytest
+uv run pytest                        # unitarias + integración
+uv run pytest -m "not integracion"   # solo unitarias, sin base de datos
 ```
+
+Las pruebas de integración (`tests/integracion/`) usan PostgreSQL con pgvector real y simulan
+Supabase, Anthropic y NVIDIA: no gastan créditos. En local toman las credenciales de
+`POSTGRES_USER` / `POSTGRES_PASSWORD` del `.env` y crean la base `analizador_test` en el
+PostgreSQL del Compose de desarrollo; si no está arriba, se omiten. En el CI la base llega por
+`TEST_DATABASE_URL` y, si falta, fallan.
+
+El contrato de la API para el frontend está en [docs/openapi.json](docs/openapi.json); se
+regenera con `uv run analizador-cli exportar-openapi` y una prueba falla si queda desactualizado.
+El plan de implementación y su seguimiento están en [docs/PLAN.md](docs/PLAN.md).
 
 ## Estructura
 
