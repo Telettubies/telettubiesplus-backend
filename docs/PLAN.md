@@ -62,7 +62,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 19 | HU-B18 | Validar que las citas existen en la fuente | hecha | sar | ab07bd9, a17aa67 | #24 |
 | 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | hecha | laqg | 325aa93, f023046 | |
 | 21 | HU-B19 | Calcular brechas, recomendación y justificación | hecha | laqg | 8db204a, eb5ccf8 | |
-| 22 | HU-B21 | Entregar el resultado y el acceso al PDF | pendiente | sar | | |
+| 22 | HU-B21 | Entregar el resultado y el acceso al PDF | hecha; integración frontend pendiente | laqg | ee6f7fe, 8bf0dd2 | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
 
 Fuera de este plan: HU-B02, B03, B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Parte de
@@ -115,6 +115,10 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 - HU-B19 calcula la recomendación en código. `ANTHROPIC_MODEL_REDACCION` explica la decisión
   con referencias a los numerales entregados. El cierre requiere una recomendación y una
   justificación consolidada para el trabajo.
+- HU-B21 expone `GET /api/licitaciones/{id}/resultado` y `GET /api/licitaciones/{id}/pdf-url`.
+  El resultado activo devuelve 202 con progreso. Un análisis anterior que cerró sin decisión
+  devuelve 409. La matriz no introduce códigos de proceso ni entidades que el backend aún no
+  persiste. El contrato actualizado está en [OpenAPI](openapi.json).
 
 ## 6. Ambigüedades detectadas
 
