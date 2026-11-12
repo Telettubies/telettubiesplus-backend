@@ -53,6 +53,10 @@ class Settings(BaseSettings):
 
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
+    # Tiempo máximo de un trabajo antes de darlo por fallido (S-09). Valor por confirmar.
+    pipeline_timeout_segundos: int = Field(default=3600, gt=0)
+    # Entregas del mismo mensaje que se toleran antes de abandonar el trabajo (HU-B09).
+    pipeline_max_intentos: int = Field(default=3, gt=0)
 
     @field_validator("cors_origins", mode="before")
     @classmethod
