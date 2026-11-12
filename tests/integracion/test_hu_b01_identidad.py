@@ -218,7 +218,7 @@ async def test_revisor_en_endpoints_de_administrador_es_403(
         ("POST", "/api/miembros/invitaciones", {"email": "nuevo@ejemplo.co"}),
         ("PATCH", f"/api/miembros/{revisor.miembro_id}/rol", {"rol": "administrador"}),
         ("DELETE", f"/api/miembros/{admin.miembro_id}", None),
-        ("POST", "/api/conocimiento/fuentes", None),
+        ("POST", "/api/conocimiento/indexacion", None),
     ]
     for metodo, url, cuerpo in intentos:
         respuesta = await cliente.request(metodo, url, headers=revisor.cabeceras, json=cuerpo)
