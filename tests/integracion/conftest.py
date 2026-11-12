@@ -25,7 +25,7 @@ from analizador.core.config import get_settings
 from analizador.db.base import Base
 from analizador.db.session import get_engine, get_sessionmaker
 from analizador.integrations import supabase
-from tests.apoyo import JwksFalso, PublicadorFalso
+from tests.apoyo import AlmacenFalso, JwksFalso, PublicadorFalso
 
 RAIZ = Path(__file__).resolve().parents[2]
 BASE_LOCAL = "analizador_test"
@@ -121,6 +121,14 @@ async def base_de_datos(
 @pytest.fixture(autouse=True)
 def jwks_falso(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(supabase, "_jwks_client", lambda: JwksFalso())
+
+
+@pytest.fixture(autouse=True)
+def almacen(monkeypatch: pytest.MonkeyPatch) -> AlmacenFalso:
+    """Ninguna prueba de integración llega a Supabase Storage."""
+    falso = AlmacenFalso()
+    falso.instalar(monkeypatch)
+    return falso
 
 
 @pytest.fixture
