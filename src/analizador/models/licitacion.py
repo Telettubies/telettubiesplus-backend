@@ -125,6 +125,9 @@ class Requisito(UUIDPk, Timestamps, Base):
     # RF-07: marcar para revisión humana en lugar de asumir.
     ambiguo: Mapped[bool] = mapped_column(default=False)
     motivo_ambiguedad: Mapped[str | None] = mapped_column(Text)
+    # Si el texto literal aparece en su sección del pliego (HU-B18). False = posible
+    # reformulación del modelo; None = aún no comprobado.
+    texto_verificado: Mapped[bool | None]
 
     licitacion: Mapped[Licitacion] = relationship(back_populates="requisitos")
     ubicacion: Mapped["UbicacionPliego | None"] = relationship(

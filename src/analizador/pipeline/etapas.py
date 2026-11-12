@@ -12,6 +12,7 @@ from typing import Any
 from analizador.models.enums import EstadoLicitacion
 from analizador.pipeline import (
     catalogo,
+    citas,
     cobertura,
     evidencia,
     extraccion,
@@ -104,8 +105,8 @@ async def verificar(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("validacion_citas")
 async def validar_citas(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 8): coincidencia difusa de cada cita con su fuente [P-04];
-    # si no coincide → `requiere_revision`.
+    # Etapa 8: cada cita se comprueba contra su fuente; si no coincide, a revisión (HU-B18).
+    await citas.ejecutar(estado)
     return {}
 
 
