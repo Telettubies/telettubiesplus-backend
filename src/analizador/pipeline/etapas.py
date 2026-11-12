@@ -11,7 +11,7 @@ from functools import wraps
 from typing import Any
 
 from analizador.models.enums import EstadoLicitacion
-from analizador.pipeline import catalogo, filtrado, lectura, progreso, secciones
+from analizador.pipeline import catalogo, extraccion, filtrado, lectura, progreso, secciones
 from analizador.pipeline.estado import EstadoAnalisis
 
 Nodo = Callable[[EstadoAnalisis], Awaitable[dict[str, Any]]]
@@ -57,9 +57,8 @@ async def filtrar(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("extraccion")
 async def extraer(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 4): una llamada por sección relevante con el modelo de Anthropic
-    # (integrations.anthropic_client.generar_estructurado). Persistir requisitos e ítems.
-    # Marcar `ambiguo` en lugar de asumir (RF-07). Documento como datos, no instrucciones (S-07).
+    # Etapa 4: requisitos e ítems verificables de cada sección relevante, con Claude (HU-B13).
+    await extraccion.ejecutar(estado)
     return {}
 
 

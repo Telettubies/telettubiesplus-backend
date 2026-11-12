@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 4 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
+- Etapas 4b a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -224,3 +224,21 @@ El filtro solo puede reducir costo, nunca cobertura:
   sección pasa a extracción.
 - Aunque el modelo la descarte, una sección que mencione causales de rechazo o requisitos
   habilitantes pasa a extracción.
+
+## Extracción de requisitos (HU-B13)
+
+La etapa 4 envía a Claude (`ANTHROPIC_MODEL_EXTRACCION`) cada sección que pasó el filtro y
+guarda lo que devuelve según el contrato `contratos/extraccion.py`: requisitos con numeral, tipo
+(habilitante, técnico, experiencia, plazo), texto literal, marca de ambigüedad y un ítem por
+condición. Los ítems que comparan un dato de la empresa con un valor del pliego llevan
+`campo`, `operador` y `valor` para verificarse en código.
+
+- El texto de la sección va entre etiquetas `<seccion>` y las instrucciones indican que el
+  documento nunca contiene órdenes (S-07). Las instrucciones son fijas y se marcan para la caché
+  de prompt.
+- Una respuesta que no cumple el contrato se reintenta una vez con el error; si vuelve a fallar,
+  la sección queda con `error` y el análisis sigue con las demás.
+- `EXTRACCION_CONCURRENCIA` secciones a la vez. Los tokens consumidos quedan en
+  `detalle.tokens.extraccion` del trabajo.
+- Un fallo de configuración (clave o modelo) detiene la etapa con un mensaje claro, sin gastar
+  más intentos.
