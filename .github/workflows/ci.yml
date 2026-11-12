@@ -2,7 +2,8 @@
 #
 # Corre en cada Pull Request hacia develop:
 #   1. calidad ........ ruff (lint y formato) y mypy.
-#   2. pruebas ........ pytest (sin servicios externos; ver tests/conftest.py).
+#   2. pruebas ........ pytest: unitarias y de integración contra PostgreSQL + pgvector
+#                       (proveedores externos simulados; ver tests/integracion/conftest.py).
 #   3. migraciones .... alembic upgrade/check/downgrade contra PostgreSQL + pgvector:
 #                       detecta modelos ORM sin su migración y migraciones no reversibles.
 #   4. imagen-docker .. construye la imagen (no la publica) y levanta docker-compose.prod.yml
@@ -53,6 +54,23 @@ jobs:
   pruebas:
     name: Pruebas
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.0-pg17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: analizador_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d analizador_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      # Con la variable definida, las pruebas de integración fallan (no se omiten) si no hay base.
+      TEST_DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/analizador_test
     steps:
       - uses: actions/checkout@v6
 

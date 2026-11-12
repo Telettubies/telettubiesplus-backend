@@ -72,4 +72,7 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
+markers = [
+    "integracion: usa PostgreSQL con pgvector real (TEST_DATABASE_URL o el Compose de desarrollo)",
+]
