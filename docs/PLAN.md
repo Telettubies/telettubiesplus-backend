@@ -58,7 +58,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 15 | HU-B14 | Comprobar la cobertura del pliego | hecha | sar | 0830e28, 1703aa0 | #20 |
 | 16 | HU-B15 | Localizar cada requisito en el PDF | hecha | sar | bc46c21, 2ff4a28 | #21 |
 | 17 | HU-B16 | Recuperar evidencia de la base de conocimiento | hecha | sar | 65f418a, bc2631e | #22 |
-| 18 | HU-B17 | Verificar el cumplimiento de cada ítem | pendiente | sar | | |
+| 18 | HU-B17 | Verificar el cumplimiento de cada ítem | hecha | sar | 073cac9, ee945fe | #23 |
 | 19 | HU-B18 | Validar que las citas existen en la fuente | pendiente | sar | | |
 | 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | pendiente | sar | | |
 | 21 | HU-B19 | Calcular brechas, recomendación y justificación | pendiente | sar | | |
@@ -132,4 +132,9 @@ Se completa al cerrar cada historia.
 - **Tablas sin bordes (HU-B10).** pdfplumber solo detecta tablas dibujadas con líneas.
 - **Tamaño de la imagen Docker.** PyMuPDF 2.1 arrastra `onnxruntime` y `numpy`.
 - **Índice vectorial.** Sin dimensión fija ni índice hasta decidir el modelo (P-10).
+- **Año de los indicadores financieros (HU-B17).** Se usa el último año cargado; un pliego que
+  pida otro año de corte no se distingue.
+- **Experiencia sin código UNSPSC (HU-B17).** Si el requisito no exige un código, no hay forma
+  determinista de saber qué contratos son pertinentes: el ítem pasa a revisión cuando alcanza
+  lo exigido, lo que deja la recomendación condicionada hasta que alguien lo confirme.
 - **Chat (HU-B24).** Los límites están aplicados, pero nada registra todavía las preguntas.
