@@ -33,7 +33,7 @@ Convenciones heredadas del andamiaje: SQLAlchemy 2 asíncrono, Alembic, enumerac
 | Lectura de PDF | PyMuPDF (texto, coordenadas, render) y pdfplumber (tablas) | Etapa 1 [P]; R-13 por la licencia AGPL |
 | OCR | Tesseract en español; Claude con visión como respaldo. Se implementa dentro de HU-B10 | P-09 (no aprobada) |
 | Reglas de recomendación | Estricta para la demo (ver sección 5) | P-05, Q-04, confirmadas para la demo |
-| Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST | **Reemplaza ADR-005 (AWS S3)** |
+| Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST. Confirmada por el equipo el 2026-11-12 | **Reemplaza ADR-005 (AWS S3)**; falta reflejarlo en el DAS v0.4 |
 
 ## 3. Orden de implementación y seguimiento
 
