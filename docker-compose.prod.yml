@@ -109,8 +109,18 @@ services:
   worker:
     <<: *backend
     command: ["analizador-worker"]
+    # El worker no expone HTTP (el HEALTHCHECK de la imagen es el de la API): se comprueba que
+    # alcanza a RabbitMQ. "up --wait" exige un healthcheck en cada servicio que queda corriendo.
     healthcheck:
-      disable: true
+      test:
+        - CMD
+        - python
+        - -c
+        - "import socket; socket.create_connection(('rabbitmq', 5672), timeout=3).close()"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     # Un trabajo en curso vuelve a la cola si no termina (prefetch=1, sin ack).
     stop_grace_period: 60s
     depends_on:
