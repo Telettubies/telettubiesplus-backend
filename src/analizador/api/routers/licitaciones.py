@@ -6,7 +6,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -14,13 +14,24 @@ from sqlalchemy.orm import selectinload
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
 from analizador.core.config import get_settings
 from analizador.integrations import almacenamiento
-from analizador.models import Item, Licitacion, Requisito, Resultado, TrabajoProcesamiento
+from analizador.models import (
+    Item,
+    Licitacion,
+    Requisito,
+    Resultado,
+    Seccion,
+    TrabajoProcesamiento,
+)
 from analizador.models.enums import EstadoTrabajo, TipoTrabajo
+from analizador.pipeline import catalogo
 from analizador.schemas import (
+    EtapaOut,
     LicitacionCreada,
     LicitacionDetalle,
     LicitacionResumen,
+    ProgresoOut,
     RequisitoOut,
+    SeccionesProgreso,
     TrabajoOut,
 )
 
@@ -251,6 +262,54 @@ async def detalle(
         justificacion=licitacion.justificacion,
         url_pdf=await url_del_pdf(licitacion, contexto.organizacion_id),
         requisitos=[RequisitoOut.model_validate(r) for r in requisitos],
+    )
+
+
+@router.get("/{licitacion_id}/progreso", response_model=ProgresoOut)
+async def progreso(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep
+) -> ProgresoOut:
+    """Etapa, porcentaje y secciones procesadas del análisis más reciente (HU-B08).
+
+    Todo sale de PostgreSQL (ADR-015): este endpoint no consulta la cola.
+    """
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    trabajo = await session.scalar(
+        select(TrabajoProcesamiento)
+        .where(
+            TrabajoProcesamiento.licitacion_id == licitacion.id,
+            TrabajoProcesamiento.tipo == TipoTrabajo.ANALISIS,
+        )
+        .order_by(TrabajoProcesamiento.creado_en.desc())
+    )
+    if trabajo is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Licitación no encontrada")
+
+    total, procesadas = (
+        await session.execute(
+            select(
+                func.count(),
+                func.count().filter(Seccion.procesada.is_(True)),
+            ).where(Seccion.licitacion_id == licitacion.id)
+        )
+    ).one()
+    return ProgresoOut(
+        licitacion_id=licitacion.id,
+        estado_licitacion=licitacion.estado,
+        trabajo_id=trabajo.id,
+        estado=trabajo.estado,
+        etapa_actual=trabajo.etapa_actual,
+        progreso=trabajo.progreso,
+        secciones=SeccionesProgreso(procesadas=procesadas, total=total) if total else None,
+        error=trabajo.error if trabajo.estado == EstadoTrabajo.FALLIDO else None,
+        intentos=trabajo.intentos,
+        iniciado_en=trabajo.iniciado_en,
+        finalizado_en=trabajo.finalizado_en,
+        actualizado_en=trabajo.actualizado_en,
+        etapas=[
+            EtapaOut(clave=e.clave, nombre=e.nombre, porcentaje=e.porcentaje)
+            for e in catalogo.ETAPAS
+        ],
     )
 
 

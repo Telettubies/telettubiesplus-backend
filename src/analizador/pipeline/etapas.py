@@ -11,19 +11,22 @@ from functools import wraps
 from typing import Any
 
 from analizador.models.enums import EstadoLicitacion
-from analizador.pipeline import progreso
+from analizador.pipeline import catalogo, progreso
 from analizador.pipeline.estado import EstadoAnalisis
 
 Nodo = Callable[[EstadoAnalisis], Awaitable[dict[str, Any]]]
 
 
-def etapa(nombre: str, porcentaje: int) -> Callable[[Nodo], Nodo]:
-    """Registra la etapa y su progreso antes de ejecutarla."""
+def etapa(clave: str) -> Callable[[Nodo], Nodo]:
+    """Registra la etapa y su progreso (según el catálogo) antes de ejecutarla."""
+    definicion = catalogo.POR_CLAVE[clave]
 
     def decorador(funcion: Nodo) -> Nodo:
         @wraps(funcion)
         async def envoltura(estado: EstadoAnalisis) -> dict[str, Any]:
-            await progreso.registrar_etapa(uuid.UUID(estado["trabajo_id"]), nombre, porcentaje)
+            await progreso.registrar_etapa(
+                uuid.UUID(estado["trabajo_id"]), definicion.clave, definicion.porcentaje
+            )
             return await funcion(estado)
 
         return envoltura
@@ -31,28 +34,28 @@ def etapa(nombre: str, porcentaje: int) -> Callable[[Nodo], Nodo]:
     return decorador
 
 
-@etapa("lectura_pdf", 5)
+@etapa("lectura_pdf")
 async def leer_pdf(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 1): texto por página y tablas. Librería [P] (PyMuPDF/pdfplumber; ver R-13
     # por la licencia AGPL de PyMuPDF). OCR de páginas escaneadas: tecnología TBD (P-09, C-11).
     return {}
 
 
-@etapa("division_secciones", 10)
+@etapa("division_secciones")
 async def dividir_secciones(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 2): separar en secciones con numeral y páginas, por reglas (ADR-012).
     # Persistir en `secciones`.
     return {}
 
 
-@etapa("filtrado", 20)
+@etapa("filtrado")
 async def filtrar(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 3): marcar `secciones.tiene_requisitos` con el modelo de NVIDIA
     # (integrations.nvidia, NVIDIA_MODEL_FILTRO).
     return {}
 
 
-@etapa("extraccion", 40)
+@etapa("extraccion")
 async def extraer(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 4): una llamada por sección relevante con el modelo de Anthropic
     # (integrations.anthropic_client.generar_estructurado). Persistir requisitos e ítems.
@@ -60,53 +63,53 @@ async def extraer(estado: EstadoAnalisis) -> dict[str, Any]:
     return {}
 
 
-@etapa("localizacion", 50)
+@etapa("localizacion")
 async def localizar(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 4b): buscar el texto literal de cada requisito en las páginas de su sección
     # y guardar `ubicaciones_pliego` (P-21, RF-26). Degradar a aproximada o solo página.
     return {}
 
 
-@etapa("comprobacion_cobertura", 55)
+@etapa("comprobacion_cobertura")
 async def comprobar_cobertura(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 5): verificar que todas las secciones quedaron `procesada` (ADR-012, N-04).
     return {}
 
 
-@etapa("recuperacion_evidencia", 70)
+@etapa("recuperacion_evidencia")
 async def recuperar_evidencia(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 6): embeddings de NVIDIA + pgvector, filtrando SIEMPRE por organizacion_id
     # (S-03). Reranker opcional (P-11).
     return {}
 
 
-@etapa("verificacion", 85)
+@etapa("verificacion")
 async def verificar(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 7): estado de cada ítem (RF-04). Numéricos por código [P-03];
     # cualitativos con el modelo de Anthropic. Persistir `resultados`.
     return {}
 
 
-@etapa("validacion_citas", 90)
+@etapa("validacion_citas")
 async def validar_citas(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 8): coincidencia difusa de cada cita con su fuente [P-04];
     # si no coincide → `requiere_revision`.
     return {}
 
 
-@etapa("decision", 95)
+@etapa("decision")
 async def decidir(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 9): brechas y recomendación por reglas [P-05]. Reglas sin definir (Q-04).
     return {}
 
 
-@etapa("justificacion", 98)
+@etapa("justificacion")
 async def justificar(estado: EstadoAnalisis) -> dict[str, Any]:
     # TODO(etapa 10): redactar la justificación con el modelo de Anthropic [P].
     return {}
 
 
-@etapa("cierre", 100)
+@etapa("cierre")
 async def cerrar(estado: EstadoAnalisis) -> dict[str, Any]:
     # Etapa 11: marcar la licitación como completada. El trabajo lo cierra el worker.
     await progreso.marcar_licitacion(
@@ -115,17 +118,20 @@ async def cerrar(estado: EstadoAnalisis) -> dict[str, Any]:
     return {}
 
 
-ETAPAS: list[tuple[str, Nodo]] = [
-    ("lectura_pdf", leer_pdf),
-    ("division_secciones", dividir_secciones),
-    ("filtrado", filtrar),
-    ("extraccion", extraer),
-    ("localizacion", localizar),
-    ("comprobacion_cobertura", comprobar_cobertura),
-    ("recuperacion_evidencia", recuperar_evidencia),
-    ("verificacion", verificar),
-    ("validacion_citas", validar_citas),
-    ("decision", decidir),
-    ("justificacion", justificar),
-    ("cierre", cerrar),
-]
+_NODOS: dict[str, Nodo] = {
+    "lectura_pdf": leer_pdf,
+    "division_secciones": dividir_secciones,
+    "filtrado": filtrar,
+    "extraccion": extraer,
+    "localizacion": localizar,
+    "comprobacion_cobertura": comprobar_cobertura,
+    "recuperacion_evidencia": recuperar_evidencia,
+    "verificacion": verificar,
+    "validacion_citas": validar_citas,
+    "decision": decidir,
+    "justificacion": justificar,
+    "cierre": cerrar,
+}
+
+# El orden lo fija el catálogo; aquí solo se asocia cada etapa con su nodo.
+ETAPAS: list[tuple[str, Nodo]] = [(e.clave, _NODOS[e.clave]) for e in catalogo.ETAPAS]

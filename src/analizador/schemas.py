@@ -68,6 +68,38 @@ class TrabajoOut(_Orm):
     finalizado_en: datetime | None
 
 
+class EtapaOut(BaseModel):
+    clave: str
+    nombre: str
+    porcentaje: int
+
+
+class SeccionesProgreso(BaseModel):
+    procesadas: int
+    total: int
+
+
+class ProgresoOut(BaseModel):
+    """Avance del análisis de una licitación, leído de PostgreSQL (HU-B08, ADR-015)."""
+
+    licitacion_id: uuid.UUID
+    estado_licitacion: EstadoLicitacion
+    trabajo_id: uuid.UUID
+    estado: EstadoTrabajo
+    etapa_actual: str | None
+    progreso: int
+    # Secciones del pliego ya procesadas sobre el total; nulo hasta que el pliego se divide.
+    secciones: SeccionesProgreso | None
+    # Mensaje para el usuario cuando el análisis falló; nunca contiene detalles internos.
+    error: str | None
+    intentos: int
+    iniciado_en: datetime | None
+    finalizado_en: datetime | None
+    actualizado_en: datetime
+    # Todas las etapas en orden, para dibujar la línea de avance.
+    etapas: list[EtapaOut]
+
+
 # --- Licitaciones y matriz ---------------------------------------------------
 
 

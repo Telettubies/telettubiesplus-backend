@@ -70,6 +70,29 @@
         "title": "EstadoTrabajo",
         "type": "string"
       },
+      "EtapaOut": {
+        "properties": {
+          "clave": {
+            "title": "Clave",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "porcentaje": {
+            "title": "Porcentaje",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clave",
+          "nombre",
+          "porcentaje"
+        ],
+        "title": "EtapaOut",
+        "type": "object"
+      },
       "FuenteConocimientoOut": {
         "properties": {
           "creado_en": {
@@ -354,6 +377,120 @@
         "title": "PrecisionUbicacion",
         "type": "string"
       },
+      "ProgresoOut": {
+        "description": "Avance del análisis de una licitación, leído de PostgreSQL (HU-B08, ADR-015).",
+        "properties": {
+          "actualizado_en": {
+            "format": "date-time",
+            "title": "Actualizado En",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoTrabajo"
+          },
+          "estado_licitacion": {
+            "$ref": "#/components/schemas/EstadoLicitacion"
+          },
+          "etapa_actual": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etapa Actual"
+          },
+          "etapas": {
+            "items": {
+              "$ref": "#/components/schemas/EtapaOut"
+            },
+            "title": "Etapas",
+            "type": "array"
+          },
+          "finalizado_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finalizado En"
+          },
+          "iniciado_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iniciado En"
+          },
+          "intentos": {
+            "title": "Intentos",
+            "type": "integer"
+          },
+          "licitacion_id": {
+            "format": "uuid",
+            "title": "Licitacion Id",
+            "type": "string"
+          },
+          "progreso": {
+            "title": "Progreso",
+            "type": "integer"
+          },
+          "secciones": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeccionesProgreso"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trabajo_id": {
+            "format": "uuid",
+            "title": "Trabajo Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "licitacion_id",
+          "estado_licitacion",
+          "trabajo_id",
+          "estado",
+          "etapa_actual",
+          "progreso",
+          "secciones",
+          "error",
+          "intentos",
+          "iniciado_en",
+          "finalizado_en",
+          "actualizado_en",
+          "etapas"
+        ],
+        "title": "ProgresoOut",
+        "type": "object"
+      },
       "RequisitoOut": {
         "properties": {
           "ambiguo": {
@@ -571,6 +708,24 @@
         ],
         "title": "Rol",
         "type": "string"
+      },
+      "SeccionesProgreso": {
+        "properties": {
+          "procesadas": {
+            "title": "Procesadas",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "procesadas",
+          "total"
+        ],
+        "title": "SeccionesProgreso",
+        "type": "object"
       },
       "TipoFuenteConocimiento": {
         "description": "Tipos de fuente de la base de conocimiento (sección 6.3).",
@@ -1235,6 +1390,72 @@
           }
         ],
         "summary": "Observaciones",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/progreso": {
+      "get": {
+        "description": "Etapa, porcentaje y secciones procesadas del análisis más reciente (HU-B08).\n\nTodo sale de PostgreSQL (ADR-015): este endpoint no consulta la cola.",
+        "operationId": "progreso_api_licitaciones__licitacion_id__progreso_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgresoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Progreso",
         "tags": [
           "licitaciones"
         ]
