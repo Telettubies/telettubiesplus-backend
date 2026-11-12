@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 4b a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
+- Etapas 6 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -251,3 +251,19 @@ pendientes (solo esas: las ya procesadas no se pagan de nuevo) y manda a extracc
 sección que no hubiera pasado por el filtro. Lo que al final siga sin procesar queda
 identificado con su numeral, sus páginas y el motivo, en `detalle.cobertura` del trabajo y en el
 resultado; la etapa no falla por ello, pero la recomendación quedará condicionada.
+
+## Localización en el PDF (HU-B15)
+
+La etapa 4b calcula por código, sin modelos, dónde está cada requisito (`pipeline/localizacion.py`).
+Busca su texto literal entre las palabras de las páginas de su sección, ignorando tildes,
+mayúsculas y puntuación, y guarda en `ubicaciones_pliego` la página donde empieza y un
+rectángulo por línea en coordenadas relativas (0..1), cada uno con su página:
+
+| Precisión | Cuándo | Qué recibe el visor |
+| --- | --- | --- |
+| `exacta` | Aparece el texto completo, palabra por palabra | Página y zonas de todo el requisito |
+| `aproximada` | Solo coincide su comienzo (4 palabras o más) | Página y zonas hasta donde coincide |
+| `solo_pagina` | No se encontró, o la página no tiene cajas (visión) | Primera página de la sección, sin zonas |
+
+En las páginas escaneadas se usan las cajas del OCR. La proporción de ubicaciones de cada
+precisión queda en `detalle.ubicaciones` del trabajo.

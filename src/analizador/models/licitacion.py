@@ -138,8 +138,10 @@ class Requisito(UUIDPk, Timestamps, Base):
 class UbicacionPliego(UUIDPk, Timestamps, Base):
     """Ubicación del texto literal en el PDF (RF-26). La calcula el código, no el modelo (P-21).
 
-    `zonas`: lista de rectángulos en coordenadas relativas a la página (0..1),
-    independientes del zoom: [{"x0": .., "y0": .., "x1": .., "y1": ..}, ...].
+    `pagina`: donde empieza el texto. `zonas`: un rectángulo por línea resaltada, en
+    coordenadas relativas a su página (0..1), independientes del zoom:
+    [{"pagina": 12, "x0": .., "y0": .., "x1": .., "y1": ..}, ...]. Cada zona lleva su página
+    porque un requisito puede continuar en la siguiente.
     """
 
     __tablename__ = "ubicaciones_pliego"
@@ -148,7 +150,7 @@ class UbicacionPliego(UUIDPk, Timestamps, Base):
         ForeignKey("requisitos.id", ondelete="CASCADE"), unique=True
     )
     pagina: Mapped[int] = mapped_column(Integer)
-    zonas: Mapped[list[dict[str, float]]] = mapped_column(JSONB, default=list)
+    zonas: Mapped[list[dict[str, float | int]]] = mapped_column(JSONB, default=list)
     precision: Mapped[PrecisionUbicacion] = mapped_column(
         str_enum(PrecisionUbicacion, "precision_ubicacion")
     )
