@@ -16,6 +16,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from analizador.core.config import get_settings
+from analizador.db.session import get_sessionmaker
 from analizador.messaging import topologia
 from analizador.models import Licitacion, TrabajoProcesamiento
 from analizador.models.enums import EstadoLicitacion, EstadoTrabajo, TipoTrabajo
@@ -58,6 +59,18 @@ class EtapasDePrueba:
                 await self.al_ejecutar[clave](estado)
             if clave in self.fallos:
                 raise self.fallos.pop(clave)  # falla una sola vez
+            if clave == "justificacion":
+                # Las etapas de prueba producen un resultado sintético para el cierre real.
+                async with get_sessionmaker()() as session:
+                    licitacion = await session.get(Licitacion, uuid.UUID(estado["licitacion_id"]))
+                    trabajo = await session.get(
+                        TrabajoProcesamiento, uuid.UUID(estado["trabajo_id"])
+                    )
+                    assert licitacion is not None and trabajo is not None
+                    licitacion.recomendacion = "condicionada"
+                    licitacion.justificacion = "Justificación sintética."
+                    trabajo.detalle = {**(trabajo.detalle or {}), "justificacion_publicada": True}
+                    await session.commit()
             if clave == "cierre":
                 return await etapas.cerrar.__wrapped__(estado)  # type: ignore[attr-defined,no-any-return]
             return {}

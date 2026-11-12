@@ -69,10 +69,12 @@ async def sumar_tokens(trabajo_id: uuid.UUID, etapa: str, uso: Uso) -> None:
 
 
 async def marcar_licitacion(licitacion_id: uuid.UUID, estado: EstadoLicitacion) -> None:
+    consulta = update(Licitacion).where(Licitacion.id == licitacion_id)
+    if estado == EstadoLicitacion.PROCESANDO:
+        # Una reentrega tras el cierre del grafo no debe reabrir la licitación (HU-B09).
+        consulta = consulta.where(Licitacion.estado != EstadoLicitacion.COMPLETADA)
     async with get_sessionmaker()() as session:
-        await session.execute(
-            update(Licitacion).where(Licitacion.id == licitacion_id).values(estado=estado)
-        )
+        await session.execute(consulta.values(estado=estado))
         await session.commit()
 
 
