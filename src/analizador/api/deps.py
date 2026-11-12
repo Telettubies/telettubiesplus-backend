@@ -25,15 +25,22 @@ _bearer = HTTPBearer(auto_error=False)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
+def _no_autenticado(mensaje: str) -> HTTPException:
+    return HTTPException(
+        status.HTTP_401_UNAUTHORIZED, mensaje, headers={"WWW-Authenticate": "Bearer"}
+    )
+
+
 async def usuario_actual(
     credenciales: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
 ) -> supabase.UsuarioAutenticado:
     if credenciales is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Falta el token de acceso")
+        raise _no_autenticado("Falta el token de acceso")
     try:
         return await supabase.verificar_token(credenciales.credentials)
     except supabase.TokenInvalidoError as exc:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido o expirado") from exc
+        # El motivo exacto (firma, expiración, audiencia) no se devuelve al cliente.
+        raise _no_autenticado("Token inválido o expirado") from exc
 
 
 UsuarioDep = Annotated[supabase.UsuarioAutenticado, Depends(usuario_actual)]
