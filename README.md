@@ -242,3 +242,12 @@ condición. Los ítems que comparan un dato de la empresa con un valor del plieg
   `detalle.tokens.extraccion` del trabajo.
 - Un fallo de configuración (clave o modelo) detiene la etapa con un mensaje claro, sin gastar
   más intentos.
+
+## Comprobación de cobertura (HU-B14)
+
+La etapa 5 es el control de que se analizó todo el pliego. Cuenta las secciones procesadas sobre
+el total, reintenta hasta `COBERTURA_MAX_REINTENTOS` veces las que quedaron en error o
+pendientes (solo esas: las ya procesadas no se pagan de nuevo) y manda a extracción cualquier
+sección que no hubiera pasado por el filtro. Lo que al final siga sin procesar queda
+identificado con su numeral, sus páginas y el motivo, en `detalle.cobertura` del trabajo y en el
+resultado; la etapa no falla por ello, pero la recomendación quedará condicionada.
