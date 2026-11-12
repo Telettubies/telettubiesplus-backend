@@ -76,8 +76,12 @@ class EstadoTrabajo(StrEnum):
 
 
 class TipoFuenteConocimiento(StrEnum):
-    """Tipos de fuente de la base de conocimiento (sección 6.3)."""
+    """Tipos de fuente de la base de conocimiento (sección 6.3).
 
+    `empresa` no está en el DAS: guarda los datos generales del oferente (razón social, NIT).
+    """
+
+    EMPRESA = "empresa"
     CONTRATO = "contrato"
     HOJA_DE_VIDA = "hoja_de_vida"
     FINANCIERO = "financiero"

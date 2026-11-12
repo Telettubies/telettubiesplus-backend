@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     # Los valores por defecto son provisionales: P-23 no fija cifras (ver docs/PLAN.md).
     max_pdf_mb: int = Field(gt=0)
     max_pdf_paginas: int = Field(default=600, gt=0)
+    # Tamaño máximo del archivo JSON de la base de conocimiento.
+    max_conocimiento_mb: int = Field(default=5, gt=0)
     # Cuotas por organización en 24 horas móviles.
     cuota_analisis_diaria: int = Field(default=20, gt=0)
     cuota_chat_diaria: int = Field(default=200, gt=0)

@@ -1,5 +1,7 @@
 """Pruebas de integración: PostgreSQL con pgvector real y proveedores externos simulados.
 
+El esquema se crea con las migraciones de Alembic, no con `create_all`.
+
 La base se toma de TEST_DATABASE_URL (así corre el CI). Si no está definida, se deriva de las
 credenciales del `.env` local apuntando a la base `analizador_test` del Compose de desarrollo,
 que se crea si no existe. El nombre de la base debe terminar en `_test`: estas pruebas vacían
@@ -12,6 +14,8 @@ from pathlib import Path
 
 import httpx
 import pytest
+from alembic import command
+from alembic.config import Config
 from dotenv import dotenv_values
 from fastapi import FastAPI
 from sqlalchemy import Engine, create_engine, text
@@ -76,6 +80,25 @@ def _crear_base_si_falta(url: URL) -> None:
         mantenimiento.dispose()
 
 
+def _migrar(url: URL) -> None:
+    """Crea el esquema con las migraciones de Alembic, igual que en producción.
+
+    Así una migración incompleta (por ejemplo, un CHECK que Alembic no detecta) hace fallar
+    las pruebas en lugar de pasar inadvertida. Sin archivo .ini para no tocar el logging.
+    """
+    configuracion = Config()
+    configuracion.set_main_option("script_location", str(RAIZ / "src/analizador/db/migrations"))
+    anterior = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = url.render_as_string(hide_password=False)
+    try:
+        command.upgrade(configuracion, "head")
+    finally:
+        if anterior is None:
+            del os.environ["DATABASE_URL"]
+        else:
+            os.environ["DATABASE_URL"] = anterior
+
+
 @pytest.fixture(scope="session")
 def motor_de_pruebas() -> Iterator[tuple[URL, Engine]]:
     url, explicita = _url_de_pruebas()
@@ -93,9 +116,9 @@ def motor_de_pruebas() -> Iterator[tuple[URL, Engine]]:
         )
     motor = create_engine(url.set(drivername="postgresql+psycopg"))
     with motor.begin() as conexion:
-        conexion.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        Base.metadata.drop_all(conexion)
-        Base.metadata.create_all(conexion)
+        conexion.execute(text("DROP SCHEMA public CASCADE"))
+        conexion.execute(text("CREATE SCHEMA public"))
+    _migrar(url)
     yield url, motor
     motor.dispose()
 
