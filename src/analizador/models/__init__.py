@@ -12,8 +12,10 @@ from analizador.models.licitacion import (
 )
 from analizador.models.organizacion import Miembro, Organizacion
 from analizador.models.trabajo import TrabajoProcesamiento
+from analizador.models.uso import EventoUso
 
 __all__ = [
+    "EventoUso",
     "Fragmento",
     "FuenteConocimiento",
     "Item",

@@ -40,7 +40,7 @@ PDF = b"%PDF-1.7\n% pliego de prueba\n"
 # falla si aparece una operación nueva sin cuerpo de ejemplo: así no queda sin probar.
 CUERPOS: dict[tuple[str, str], dict[str, Any] | None] = {
     ("post", "/api/licitaciones/{licitacion_id}/reintentar"): None,
-    ("post", "/api/licitaciones/{licitacion_id}/chat"): None,
+    ("post", "/api/licitaciones/{licitacion_id}/chat"): {"pregunta": "¿Qué exige el pliego?"},
     ("post", "/api/licitaciones/{licitacion_id}/observaciones"): None,
     ("post", "/api/resultados/{resultado_id}/revisiones"): {
         "estado_nuevo": "cumple",

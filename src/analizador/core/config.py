@@ -34,8 +34,14 @@ class Settings(BaseSettings):
     # Vigencia de las URL firmadas del PDF (P-14, S-10: "pocos minutos").
     storage_url_ttl_seconds: int = Field(default=300, gt=0)
 
-    # --- Límites (S-08) ---
+    # --- Límites de uso (S-08, HU-B26) ---
+    # Los valores por defecto son provisionales: P-23 no fija cifras (ver docs/PLAN.md).
     max_pdf_mb: int = Field(gt=0)
+    max_pdf_paginas: int = Field(default=600, gt=0)
+    # Cuotas por organización en 24 horas móviles.
+    cuota_analisis_diaria: int = Field(default=20, gt=0)
+    cuota_chat_diaria: int = Field(default=200, gt=0)
+    chat_max_caracteres: int = Field(default=2000, gt=0)
 
     # --- Anthropic (C-10) ---
     anthropic_api_key: SecretStr | None = None
@@ -50,6 +56,11 @@ class Settings(BaseSettings):
     nvidia_model_embeddings: str | None = None
     nvidia_model_chat: str | None = None
     nvidia_model_rerank: str | None = None
+    # Límite de velocidad y reintentos (R-02: ~40 peticiones/min según fuentes no oficiales, Q-13).
+    nvidia_peticiones_por_minuto: int = Field(default=30, gt=0)
+    nvidia_max_reintentos: int = Field(default=5, ge=0)
+    nvidia_espera_base_segundos: float = Field(default=2.0, gt=0)
+    nvidia_espera_maxima_segundos: float = Field(default=60.0, gt=0)
 
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
