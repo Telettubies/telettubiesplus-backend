@@ -10,6 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from analizador.contratos.decision import EstadoMatriz, Recomendacion
 from analizador.models.enums import (
     EstadoCumplimiento,
     EstadoLicitacion,
@@ -169,6 +170,80 @@ class LicitacionDetalle(LicitacionResumen):
     # URL prefirmada de corta duración para el visor (P-14, RF-26, F-09).
     url_pdf: str
     requisitos: list[RequisitoOut]
+
+
+class UrlPdfOut(BaseModel):
+    pdf_url_temporal: str
+
+
+class ZonaMatrizOut(BaseModel):
+    pagina: int
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class UbicacionMatrizOut(BaseModel):
+    pagina: int
+    precision: PrecisionUbicacion
+    zonas: list[ZonaMatrizOut]
+
+
+class EvidenciaMatrizOut(BaseModel):
+    fuente_id: str | None
+    fuente_nombre: str | None
+    cita_literal: str
+    cita_verificada: bool
+    similitud: float | None
+
+
+class ItemMatrizOut(BaseModel):
+    id: uuid.UUID
+    requisito_id: uuid.UUID
+    resultado_id: uuid.UUID | None
+    codigo_req: str
+    numeral: str
+    categoria: TipoRequisito
+    texto_requisito_literal: str
+    texto_requisito_verificado: bool | None
+    descripcion_item: str
+    estado: EstadoMatriz
+    estado_propuesto: EstadoCumplimiento | None
+    motivo_revision: str | None
+    es_ambiguo: bool
+    evidencia: EvidenciaMatrizOut | None
+    evidencias: list[EvidenciaMatrizOut]
+    faltante: str | None
+    confianza: float | None
+    ubicacion: UbicacionMatrizOut
+    revisiones: list[RevisionOut]
+
+
+class CoberturaMatrizOut(BaseModel):
+    secciones_procesadas: int
+    secciones_total: int
+    numerales_no_procesados: list[str]
+
+
+class ResultadoMatrizOut(BaseModel):
+    licitacion_id: uuid.UUID
+    nombre: str
+    fecha_carga: datetime
+    pdf_nombre: str
+    pdf_paginas: int | None
+    pdf_url_temporal: str
+    recomendacion: Recomendacion
+    justificacion: str
+    cobertura: CoberturaMatrizOut
+    resumen_estados: dict[EstadoMatriz, int]
+    categorias: dict[TipoRequisito, dict[EstadoMatriz, int]]
+    items: list[ItemMatrizOut]
+    brechas: list[ItemMatrizOut]
+
+
+class ErrorResultadoOut(BaseModel):
+    detail: str
 
 
 # --- Revisión humana (RF-14) ---------------------------------------------------

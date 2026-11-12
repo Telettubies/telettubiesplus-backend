@@ -55,6 +55,32 @@
         "title": "CambioRolIn",
         "type": "object"
       },
+      "CoberturaMatrizOut": {
+        "properties": {
+          "numerales_no_procesados": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Numerales No Procesados",
+            "type": "array"
+          },
+          "secciones_procesadas": {
+            "title": "Secciones Procesadas",
+            "type": "integer"
+          },
+          "secciones_total": {
+            "title": "Secciones Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "secciones_procesadas",
+          "secciones_total",
+          "numerales_no_procesados"
+        ],
+        "title": "CoberturaMatrizOut",
+        "type": "object"
+      },
       "ConocimientoCargado": {
         "properties": {
           "resumen": {
@@ -69,6 +95,19 @@
           "trabajo"
         ],
         "title": "ConocimientoCargado",
+        "type": "object"
+      },
+      "ErrorResultadoOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorResultadoOut",
         "type": "object"
       },
       "EstadoCumplimiento": {
@@ -89,6 +128,16 @@
           "fallida"
         ],
         "title": "EstadoLicitacion",
+        "type": "string"
+      },
+      "EstadoMatriz": {
+        "enum": [
+          "cumple",
+          "cumple_parcialmente",
+          "no_cumple",
+          "revision"
+        ],
+        "title": "EstadoMatriz",
         "type": "string"
       },
       "EstadoTrabajo": {
@@ -122,6 +171,60 @@
           "porcentaje"
         ],
         "title": "EtapaOut",
+        "type": "object"
+      },
+      "EvidenciaMatrizOut": {
+        "properties": {
+          "cita_literal": {
+            "title": "Cita Literal",
+            "type": "string"
+          },
+          "cita_verificada": {
+            "title": "Cita Verificada",
+            "type": "boolean"
+          },
+          "fuente_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuente Id"
+          },
+          "fuente_nombre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuente Nombre"
+          },
+          "similitud": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similitud"
+          }
+        },
+        "required": [
+          "fuente_id",
+          "fuente_nombre",
+          "cita_literal",
+          "cita_verificada",
+          "similitud"
+        ],
+        "title": "EvidenciaMatrizOut",
         "type": "object"
       },
       "FuenteConocimientoOut": {
@@ -182,6 +285,162 @@
           "email"
         ],
         "title": "InvitacionIn",
+        "type": "object"
+      },
+      "ItemMatrizOut": {
+        "properties": {
+          "categoria": {
+            "$ref": "#/components/schemas/TipoRequisito"
+          },
+          "codigo_req": {
+            "title": "Codigo Req",
+            "type": "string"
+          },
+          "confianza": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confianza"
+          },
+          "descripcion_item": {
+            "title": "Descripcion Item",
+            "type": "string"
+          },
+          "es_ambiguo": {
+            "title": "Es Ambiguo",
+            "type": "boolean"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoMatriz"
+          },
+          "estado_propuesto": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EstadoCumplimiento"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidencia": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenciaMatrizOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidencias": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenciaMatrizOut"
+            },
+            "title": "Evidencias",
+            "type": "array"
+          },
+          "faltante": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Faltante"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "motivo_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo Revision"
+          },
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          },
+          "resultado_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado Id"
+          },
+          "revisiones": {
+            "items": {
+              "$ref": "#/components/schemas/RevisionOut"
+            },
+            "title": "Revisiones",
+            "type": "array"
+          },
+          "texto_requisito_literal": {
+            "title": "Texto Requisito Literal",
+            "type": "string"
+          },
+          "texto_requisito_verificado": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Texto Requisito Verificado"
+          },
+          "ubicacion": {
+            "$ref": "#/components/schemas/UbicacionMatrizOut"
+          }
+        },
+        "required": [
+          "id",
+          "requisito_id",
+          "resultado_id",
+          "codigo_req",
+          "numeral",
+          "categoria",
+          "texto_requisito_literal",
+          "texto_requisito_verificado",
+          "descripcion_item",
+          "estado",
+          "estado_propuesto",
+          "motivo_revision",
+          "es_ambiguo",
+          "evidencia",
+          "evidencias",
+          "faltante",
+          "confianza",
+          "ubicacion",
+          "revisiones"
+        ],
+        "title": "ItemMatrizOut",
         "type": "object"
       },
       "ItemOut": {
@@ -572,6 +831,16 @@
         "title": "ProgresoOut",
         "type": "object"
       },
+      "Recomendacion": {
+        "enum": [
+          "presentarse",
+          "presentarse_con_riesgo",
+          "no_presentarse",
+          "condicionada"
+        ],
+        "title": "Recomendacion",
+        "type": "string"
+      },
       "RequisitoOut": {
         "properties": {
           "ambiguo": {
@@ -641,6 +910,110 @@
           "items"
         ],
         "title": "RequisitoOut",
+        "type": "object"
+      },
+      "ResultadoMatrizOut": {
+        "properties": {
+          "brechas": {
+            "items": {
+              "$ref": "#/components/schemas/ItemMatrizOut"
+            },
+            "title": "Brechas",
+            "type": "array"
+          },
+          "categorias": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "propertyNames": {
+                "$ref": "#/components/schemas/EstadoMatriz"
+              },
+              "type": "object"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/TipoRequisito"
+            },
+            "title": "Categorias",
+            "type": "object"
+          },
+          "cobertura": {
+            "$ref": "#/components/schemas/CoberturaMatrizOut"
+          },
+          "fecha_carga": {
+            "format": "date-time",
+            "title": "Fecha Carga",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemMatrizOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "justificacion": {
+            "title": "Justificacion",
+            "type": "string"
+          },
+          "licitacion_id": {
+            "format": "uuid",
+            "title": "Licitacion Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "pdf_nombre": {
+            "title": "Pdf Nombre",
+            "type": "string"
+          },
+          "pdf_paginas": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Paginas"
+          },
+          "pdf_url_temporal": {
+            "title": "Pdf Url Temporal",
+            "type": "string"
+          },
+          "recomendacion": {
+            "$ref": "#/components/schemas/Recomendacion"
+          },
+          "resumen_estados": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/EstadoMatriz"
+            },
+            "title": "Resumen Estados",
+            "type": "object"
+          }
+        },
+        "required": [
+          "licitacion_id",
+          "nombre",
+          "fecha_carga",
+          "pdf_nombre",
+          "pdf_paginas",
+          "pdf_url_temporal",
+          "recomendacion",
+          "justificacion",
+          "cobertura",
+          "resumen_estados",
+          "categorias",
+          "items",
+          "brechas"
+        ],
+        "title": "ResultadoMatrizOut",
         "type": "object"
       },
       "ResultadoOut": {
@@ -1018,6 +1391,31 @@
         "title": "TrabajoOut",
         "type": "object"
       },
+      "UbicacionMatrizOut": {
+        "properties": {
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "precision": {
+            "$ref": "#/components/schemas/PrecisionUbicacion"
+          },
+          "zonas": {
+            "items": {
+              "$ref": "#/components/schemas/ZonaMatrizOut"
+            },
+            "title": "Zonas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pagina",
+          "precision",
+          "zonas"
+        ],
+        "title": "UbicacionMatrizOut",
+        "type": "object"
+      },
       "UbicacionOut": {
         "properties": {
           "pagina": {
@@ -1044,6 +1442,19 @@
           "precision"
         ],
         "title": "UbicacionOut",
+        "type": "object"
+      },
+      "UrlPdfOut": {
+        "properties": {
+          "pdf_url_temporal": {
+            "title": "Pdf Url Temporal",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pdf_url_temporal"
+        ],
+        "title": "UrlPdfOut",
         "type": "object"
       },
       "UsoOut": {
@@ -1136,6 +1547,39 @@
           "membresias"
         ],
         "title": "YoOut",
+        "type": "object"
+      },
+      "ZonaMatrizOut": {
+        "properties": {
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "pagina",
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "ZonaMatrizOut",
         "type": "object"
       }
     },
@@ -1724,6 +2168,72 @@
         ]
       }
     },
+    "/api/licitaciones/{licitacion_id}/pdf-url": {
+      "get": {
+        "description": "Renueva el acceso temporal al pliego del visor (HU-B21, RF-26).",
+        "operationId": "renovar_url_pdf_api_licitaciones__licitacion_id__pdf_url_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlPdfOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Renovar Url Pdf",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
     "/api/licitaciones/{licitacion_id}/progreso": {
       "get": {
         "description": "Etapa, porcentaje y secciones procesadas del análisis más reciente (HU-B08).\n\nTodo sale de PostgreSQL (ADR-015): este endpoint no consulta la cola.",
@@ -1851,6 +2361,100 @@
           }
         ],
         "summary": "Reintentar",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/resultado": {
+      "get": {
+        "description": "Entrega el resultado consolidado, o el avance cuando el trabajo sigue activo (HU-B21).",
+        "operationId": "resultado_matriz_api_licitaciones__licitacion_id__resultado_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoMatrizOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgresoOut"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProgresoOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorResultadoOut"
+                    }
+                  ],
+                  "title": "Response 409 Resultado Matriz Api Licitaciones  Licitacion Id  Resultado Get"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resultado Matriz",
         "tags": [
           "licitaciones"
         ]
