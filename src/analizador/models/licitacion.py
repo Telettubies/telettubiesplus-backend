@@ -32,6 +32,7 @@ from analizador.models.enums import (
     OrigenPagina,
     PrecisionUbicacion,
     TipoRequisito,
+    TipoVerificacion,
     str_enum,
 )
 
@@ -100,6 +101,9 @@ class Seccion(UUIDPk, Timestamps, Base):
     tiene_requisitos: Mapped[bool | None]
     # Por qué el filtro la descartó o la dejó pasar; consultable (HU-B12).
     motivo_filtro: Mapped[str | None] = mapped_column(Text)
+    # Etapa 4 (extracción): por qué no se pudo procesar y cuántas veces se intentó (HU-B13).
+    error: Mapped[str | None] = mapped_column(Text)
+    intentos: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     # Etapa 5 (comprobación de cobertura, ADR-012).
     procesada: Mapped[bool] = mapped_column(default=False)
 
@@ -162,6 +166,14 @@ class Item(UUIDPk, Timestamps, Base):
     )
     orden: Mapped[int] = mapped_column(Integer, default=0)
     descripcion: Mapped[str] = mapped_column(Text)
+    # Cómo se verifica: por código contra datos estructurados, o por el modelo (P-03).
+    tipo_verificacion: Mapped[TipoVerificacion] = mapped_column(
+        str_enum(TipoVerificacion, "tipo_verificacion"),
+        default=TipoVerificacion.CUALITATIVO,
+        server_default=TipoVerificacion.CUALITATIVO.value,
+    )
+    # Para ítems numéricos: {"campo", "operador", "valor", "valor_texto", "unidad"}.
+    parametros: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
     requisito: Mapped[Requisito] = relationship(back_populates="items")
     resultado: Mapped["Resultado | None"] = relationship(

@@ -8,6 +8,7 @@ from sqlalchemy import cast, func, update
 from sqlalchemy.dialects.postgresql import JSONB
 
 from analizador.db.session import get_sessionmaker
+from analizador.integrations.anthropic_client import Uso
 from analizador.models import Licitacion, TrabajoProcesamiento
 from analizador.models.enums import EstadoLicitacion, EstadoTrabajo
 
@@ -46,6 +47,24 @@ async def anotar_detalle(trabajo_id: uuid.UUID, **cifras: Any) -> None:
             .where(TrabajoProcesamiento.id == trabajo_id)
             .values(detalle=actual.op("||")(cast(cifras, JSONB)))
         )
+        await session.commit()
+
+
+async def sumar_tokens(trabajo_id: uuid.UUID, etapa: str, uso: Uso) -> None:
+    """Acumula en el detalle del trabajo los tokens que consumió una etapa (R-04).
+
+    Se suman a los ya anotados: una etapa puede ejecutarse varias veces si se reanuda.
+    """
+    async with get_sessionmaker()() as session:
+        trabajo = await session.get(TrabajoProcesamiento, trabajo_id, with_for_update=True)
+        if trabajo is None:
+            return
+        detalle = dict(trabajo.detalle or {})
+        tokens = dict(detalle.get("tokens") or {})
+        previo = Uso(**tokens.get(etapa, {}))
+        tokens[etapa] = (previo + uso).como_dict()
+        detalle["tokens"] = tokens
+        trabajo.detalle = detalle
         await session.commit()
 
 

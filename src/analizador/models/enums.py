@@ -109,3 +109,10 @@ class OrigenPagina(StrEnum):
     OCR = "ocr"  # página escaneada leída con Tesseract; conserva las cajas de las palabras
     VISION = "vision"  # transcrita por el modelo con visión; sin cajas
     NO_LEIDA = "no_leida"  # ni el OCR ni la visión lograron texto legible
+
+
+class TipoVerificacion(StrEnum):
+    """Cómo se verifica un ítem (P-03, HU-B13, HU-B17)."""
+
+    NUMERICO = "numerico"  # por código, contra un dato estructurado de la empresa
+    CUALITATIVO = "cualitativo"  # lo valora el modelo contra la evidencia recuperada

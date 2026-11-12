@@ -54,7 +54,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 11 | HU-B10 | Leer el texto del pliego, incluidas páginas escaneadas | hecha | sar | b5e06e2, bfb9b3e | #16 |
 | 12 | HU-B11 | Dividir el pliego en secciones con su numeral | hecha | sar | 2e7690a, 50bb6b5 | #17 |
 | 13 | HU-B12 | Filtrar secciones sin requisitos | hecha | sar | 5505238, 7671c7c | #18 |
-| 14 | HU-B13 | Extraer y atomizar requisitos | pendiente | sar | | |
+| 14 | HU-B13 | Extraer y atomizar requisitos | hecha | sar | 8141fe0, 3336c7f | #19 |
 | 15 | HU-B14 | Comprobar la cobertura del pliego | pendiente | sar | | |
 | 16 | HU-B15 | Localizar cada requisito en el PDF | pendiente | sar | | |
 | 17 | HU-B16 | Recuperar evidencia de la base de conocimiento | pendiente | sar | | |
@@ -111,8 +111,9 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 
 - **Creación de organizaciones.** El DAS solo describe cómo un administrador invita revisores. Se
   mantiene el comando `analizador-cli crear-organizacion`.
-- **Campos comparables por código (P-03).** El DAS no enumera los indicadores. Se define un
-  conjunto cerrado en el contrato de extracción; lo que no encaje se verifica como cualitativo.
+- **Campos comparables por código (P-03).** El DAS no enumera los indicadores. El contrato de
+  extracción define un conjunto cerrado: los siete indicadores financieros del RUP, el valor y el
+  número de contratos de experiencia y el código UNSPSC. Lo demás se verifica como cualitativo.
 - **Subsanabilidad (Q-01, RF-20).** Sin criterios: las brechas no se clasifican como subsanables.
 - **Pliego de demostración (Q-11).** No está elegido. HU-B11 y HU-B15 se prueban con un PDF
   sintético; la medición sobre un pliego real de SECOP queda pendiente.

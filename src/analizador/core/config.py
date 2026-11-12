@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     filtro_lote: int = Field(default=8, gt=0)
     filtro_max_caracteres_lote: int = Field(default=24000, ge=1000)
 
+    # Secciones que se envían a Claude a la vez en la extracción (HU-B13).
+    extraccion_concurrencia: int = Field(default=3, gt=0)
+
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
     # Tiempo máximo de un trabajo antes de darlo por fallido (S-09). Valor por confirmar.

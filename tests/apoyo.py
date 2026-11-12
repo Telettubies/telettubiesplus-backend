@@ -1,5 +1,6 @@
 """Utilidades compartidas por las pruebas: tokens de Supabase firmados, dobles y fábricas."""
 
+import asyncio
 import hashlib
 import time
 import uuid
@@ -11,7 +12,9 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from analizador.contratos.extraccion import ExtraccionSeccion
 from analizador.integrations import almacenamiento, nvidia
+from analizador.integrations.anthropic_client import Uso
 from analizador.messaging.mensajes import MensajeTrabajo
 from analizador.models import (
     Fragmento,
@@ -316,3 +319,37 @@ class EmbeddingsFalsos:
 
     def instalar(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(nvidia, "embeddings", self)
+
+
+@dataclass
+class ExtractorFalso:
+    """Sustituye a `anthropic_client.generar_estructurado`.
+
+    `respuestas` asocia un fragmento del texto de la sección con la cola de respuestas (o
+    errores) que el modelo dará, en orden, a las llamadas sobre esa sección.
+    """
+
+    respuestas: dict[str, list[Any]] = field(default_factory=dict)
+    llamadas: list[dict[str, Any]] = field(default_factory=list)
+    en_curso: int = 0
+    maximo_simultaneo: int = 0
+
+    async def __call__(self, **kwargs: Any) -> tuple[ExtraccionSeccion, Uso]:
+        self.llamadas.append(kwargs)
+        self.en_curso += 1
+        self.maximo_simultaneo = max(self.maximo_simultaneo, self.en_curso)
+        try:
+            await asyncio.sleep(0.01)  # cede el control: así se ve la concurrencia real
+            contenido = kwargs["messages"][0]["content"]
+            for fragmento, cola in self.respuestas.items():
+                if fragmento in contenido:
+                    respuesta = cola.pop(0) if len(cola) > 1 else cola[0]
+                    if isinstance(respuesta, Exception):
+                        raise respuesta
+                    return respuesta, Uso(entrada=120, salida=40, cache_leidos=900)
+            return ExtraccionSeccion(requisitos=[]), Uso(entrada=100, salida=5)
+        finally:
+            self.en_curso -= 1
+
+    def enviadas(self, fragmento: str) -> int:
+        return sum(1 for llamada in self.llamadas if fragmento in llamada["messages"][0]["content"])
