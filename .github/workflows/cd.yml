@@ -33,9 +33,6 @@ concurrency:
   group: despliegue-produccion
   cancel-in-progress: false
 
-env:
-  COMPOSE: docker compose -f docker-compose.prod.yml
-
 jobs:
   imagen:
     name: Publicar imagen en GHCR
@@ -123,14 +120,15 @@ jobs:
         run: |
           # El token de GHCR viaja por la entrada estándar (no queda en la línea de comandos).
           printf '%s' "$GHCR_TOKEN" | ssh ec2 "docker login ghcr.io -u '$GHCR_USUARIO' --password-stdin"
-          ssh ec2 bash -s -- "$DIRECTORIO" "$IMAGEN" "$TAG" "$COMPOSE" <<'EOF'
+          # ssh une los argumentos en una sola cadena: se escapan con printf %q para conservarlos.
+          ssh ec2 "bash -s -- $(printf '%q ' "$DIRECTORIO" "$IMAGEN" "$TAG")" <<'EOF'
           set -euo pipefail
           cd "$1"
           trap 'docker logout ghcr.io >/dev/null' EXIT
           test -f .env || { echo "::error::Falta $1/.env en la EC2 (ver .env.prod.example)"; exit 1; }
           # Tienen prioridad sobre los valores del .env.
           export BACKEND_IMAGE="$2" BACKEND_TAG="$3"
-          COMPOSE="$4"
+          COMPOSE="docker compose -f docker-compose.prod.yml"
           $COMPOSE pull --quiet
           # "migrate" corre antes de api y worker (depends_on); si falla, no se reinicia nada más.
           $COMPOSE up -d --no-build --remove-orphans --wait --wait-timeout 300
@@ -140,17 +138,18 @@ jobs:
 
       - name: Verificar /health/ready en la EC2
         run: |
-          ssh ec2 bash -s -- "$DIRECTORIO" "$COMPOSE" <<'EOF'
+          ssh ec2 "bash -s -- $(printf '%q ' "$DIRECTORIO")" <<'EOF'
           cd "$1"
+          COMPOSE="docker compose -f docker-compose.prod.yml"
           for _ in $(seq 1 20); do
-            if $2 exec -T api python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5).read().decode())"; then
+            if $COMPOSE exec -T api python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5).read().decode())"; then
               exit 0
             fi
             sleep 5
           done
           echo "::error::La API no respondió 200 en /health/ready"
-          $2 ps -a
-          $2 logs --no-color --tail 100 migrate api worker
+          $COMPOSE ps -a
+          $COMPOSE logs --no-color --tail 100 migrate api worker
           exit 1
           EOF
 
