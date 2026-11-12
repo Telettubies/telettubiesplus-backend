@@ -41,8 +41,8 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 
 | # | Ítem | Descripción | Estado | Rama | Commit | PR |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | T-00 | Plan, convenciones, pruebas de integración con PostgreSQL, errores, OpenAPI exportado | en curso | sar | | |
-| 2 | HU-B01 | Verificar identidad y resolver organización y rol | pendiente | sar | | |
+| 1 | T-00 | Plan, convenciones, pruebas de integración con PostgreSQL, errores, OpenAPI exportado | hecha | sar | c553b72…f9c6487 | #6 |
+| 2 | HU-B01 | Verificar identidad y resolver organización y rol | hecha | sar | facdfab | #7 |
 | 3 | T-01 | Migrar el almacenamiento de S3 a Supabase Storage | pendiente | sar | | |
 | 4 | HU-B04 | Aislar los datos de cada organización | pendiente | sar | | |
 | 5 | HU-B07 | Cargar un pliego para análisis | pendiente | sar | | |
