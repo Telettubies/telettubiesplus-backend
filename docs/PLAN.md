@@ -47,7 +47,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 4 | HU-B04 | Aislar los datos de cada organización | hecha | sar | 537dbbe, cf71ac0 | #9 |
 | 5 | HU-B07 | Cargar un pliego para análisis | hecha | sar | 8fe947d, a265a6e | #10 |
 | 6 | HU-B08 | Consultar el progreso de un análisis | hecha | sar | e138f8a | #11 |
-| 7 | HU-B09 | Orquestar el pipeline y tolerar fallos | pendiente | sar | | |
+| 7 | HU-B09 | Orquestar el pipeline y tolerar fallos | hecha | sar | 501ae68, 91e3796 | #12 |
 | 8 | HU-B26 | Limitar el uso para proteger créditos y presupuesto | pendiente | sar | | |
 | 9 | HU-B05 | Cargar la base de conocimiento estructurada | pendiente | sar | | |
 | 10 | HU-B06 | Indexar los documentos de la empresa | pendiente | sar | | |
