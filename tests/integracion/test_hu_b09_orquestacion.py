@@ -407,6 +407,29 @@ async def test_un_grafo_ya_terminado_no_se_vuelve_a_ejecutar(
     assert prueba.ejecutadas == ORDEN_DAS
 
 
+async def test_reentrega_despues_del_cierre_conserva_la_licitacion_completada(
+    sesion: AsyncSession, revisor: Identidad
+) -> None:
+    trabajo = await _trabajo_en_cola(sesion, revisor)
+    prueba = EtapasDePrueba()
+    grafo_analisis = prueba.grafo()
+    estado = EstadoAnalisis(
+        trabajo_id=str(trabajo.id),
+        licitacion_id=str(trabajo.licitacion_id),
+        organizacion_id=str(trabajo.organizacion_id),
+    )
+    trabajo.estado = EstadoTrabajo.EN_EJECUCION
+    await sesion.commit()
+    await grafo.ejecutar(grafo_analisis, estado)
+
+    reentrega = await _procesar(trabajo, grafo_analisis)
+
+    licitacion = await _recargar(sesion, trabajo)
+    assert reentrega.confirmado and trabajo.estado == EstadoTrabajo.COMPLETADO
+    assert licitacion.estado == EstadoLicitacion.COMPLETADA
+    assert prueba.ejecutadas == ORDEN_DAS
+
+
 async def test_la_reentrega_tras_una_caida_reanuda_donde_quedo(
     sesion: AsyncSession, revisor: Identidad
 ) -> None:
