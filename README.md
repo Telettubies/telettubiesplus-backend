@@ -134,10 +134,9 @@ src/analizador/
 ## Pendiente (stubs y TODO)
 
 - Etapas del pipeline (`pipeline/etapas.py`): todas registran progreso pero no procesan nada.
-- Indexación de la base de conocimiento (HU-B06): el trabajo se encola pero aún no vectoriza.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
-- Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija hasta decidir el
-  modelo de embeddings (P-10).
+- Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
+  exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
 
 ## Fallos y reintentos del análisis (HU-B09)
 
@@ -176,5 +175,8 @@ en [docs/ejemplos/base_conocimiento.json](docs/ejemplos/base_conocimiento.json).
 - El archivo se valida entero: si algo falla responde 422 con **todos** los errores, cada uno con
   su campo (`contratos[2].fecha_fin`), su ubicación y un mensaje; no se guarda nada.
 - Cada carga reemplaza a la anterior por completo y en una sola transacción.
-- Tras guardar se encola la indexación; `GET /api/conocimiento` muestra el resumen y su estado, y
+- Tras guardar se encola la indexación (HU-B06): un fragmento por contrato, perfil, experiencia,
+  certificación, capacidad y año financiero, vectorizado por lotes con `NVIDIA_MODEL_EMBEDDINGS`. Un
+  texto ya vectorizado no se reenvía y el índice se reemplaza completo o no se toca.
+- `GET /api/conocimiento` muestra el resumen y el estado de la indexación, y
   `POST /api/conocimiento/indexacion` la vuelve a lanzar si falló.

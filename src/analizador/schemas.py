@@ -63,6 +63,8 @@ class TrabajoOut(_Orm):
     etapa_actual: str | None
     progreso: int
     error: str | None
+    # Cifras del trabajo al terminar; p. ej. fuentes y fragmentos indexados (HU-B06).
+    detalle: dict[str, Any] | None
     creado_en: datetime
     iniciado_en: datetime | None
     finalizado_en: datetime | None

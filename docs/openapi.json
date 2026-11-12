@@ -929,6 +929,18 @@
             "title": "Creado En",
             "type": "string"
           },
+          "detalle": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detalle"
+          },
           "error": {
             "anyOf": [
               {
@@ -998,6 +1010,7 @@
           "etapa_actual",
           "progreso",
           "error",
+          "detalle",
           "creado_en",
           "iniciado_en",
           "finalizado_en"

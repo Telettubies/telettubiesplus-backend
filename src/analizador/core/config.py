@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     nvidia_model_embeddings: str | None = None
     nvidia_model_chat: str | None = None
     nvidia_model_rerank: str | None = None
+    # Textos por llamada al modelo de embeddings (HU-B06).
+    embeddings_lote: int = Field(default=32, gt=0)
     # Límite de velocidad y reintentos (R-02: ~40 peticiones/min según fuentes no oficiales, Q-13).
     nvidia_peticiones_por_minuto: int = Field(default=30, gt=0)
     nvidia_max_reintentos: int = Field(default=5, ge=0)

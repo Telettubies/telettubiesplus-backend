@@ -1,5 +1,6 @@
 """Utilidades compartidas por las pruebas: tokens de Supabase firmados, dobles y fábricas."""
 
+import hashlib
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -10,7 +11,8 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from analizador.integrations import almacenamiento
+from analizador.integrations import almacenamiento, nvidia
+from analizador.messaging.mensajes import MensajeTrabajo
 from analizador.models import (
     Fragmento,
     FuenteConocimiento,
@@ -262,3 +264,55 @@ async def sembrar_matriz(sesion: AsyncSession, quien: Identidad, marca: str) -> 
         fragmento_id=fragmento.id,
         storage_key=clave,
     )
+
+
+@dataclass
+class MensajeFalso:
+    """Mensaje de RabbitMQ de prueba: anota si se confirmó o se rechazó."""
+
+    body: bytes
+    confirmado: bool = False
+    rechazado: bool = False
+    reencolado: bool | None = None
+
+    async def ack(self) -> None:
+        self.confirmado = True
+
+    async def reject(self, requeue: bool = False) -> None:
+        self.rechazado = True
+        self.reencolado = requeue
+
+
+def mensaje_de(trabajo_id: uuid.UUID) -> MensajeFalso:
+    return MensajeFalso(MensajeTrabajo(trabajo_id=trabajo_id).model_dump_json().encode())
+
+
+def vector_de(texto: str) -> list[float]:
+    """Vector determinista de ocho dimensiones a partir del texto."""
+    return [byte / 255 for byte in hashlib.sha256(texto.encode("utf-8")).digest()[:8]]
+
+
+@dataclass
+class EmbeddingsFalsos:
+    """Sustituye a `nvidia.embeddings`: anota cada lote y devuelve vectores deterministas."""
+
+    lotes: list[list[str]] = field(default_factory=list)
+    tipos: list[str] = field(default_factory=list)
+    fallar_desde_el_lote: int | None = None
+    antes_de_responder: Any = None
+
+    @property
+    def textos_enviados(self) -> list[str]:
+        return [texto for lote in self.lotes for texto in lote]
+
+    async def __call__(self, textos: list[str], tipo: str) -> list[list[float]]:
+        if self.fallar_desde_el_lote is not None and len(self.lotes) >= self.fallar_desde_el_lote:
+            raise nvidia.NvidiaNoDisponibleError("NVIDIA no respondió tras 5 reintentos")
+        self.lotes.append(list(textos))
+        self.tipos.append(tipo)
+        if self.antes_de_responder is not None:
+            await self.antes_de_responder()
+        return [vector_de(texto) for texto in textos]
+
+    def instalar(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(nvidia, "embeddings", self)
