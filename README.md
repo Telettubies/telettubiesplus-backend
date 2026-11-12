@@ -40,11 +40,11 @@ Preparación de la instancia (una vez):
 
 1. **Security group**: entrada 80, 443 y 22. El CD entra por SSH desde runners de GitHub (IPs variables),
    así que 22 debe quedar abierto con acceso solo por llave. No abrir 5432, 5672 ni 15672.
-2. **Rol IAM** de la instancia con `s3:GetObject` / `s3:PutObject` sobre el bucket (sin claves en `.env`).
-3. **IMDSv2 desde contenedores**: subir el *hop limit* a 2, o boto3 no obtiene las credenciales del rol:
-   `aws ec2 modify-instance-metadata-options --instance-id <id> --http-put-response-hop-limit 2 --http-tokens required`
-4. **IP elástica** y registro DNS A del dominio de la API hacia ella.
-5. Instalar Docker y el plugin de Compose (Amazon Linux 2023: `sudo dnf install -y docker`, plugin
+2. **Supabase Storage**: crear un bucket **privado** y poner su nombre en `SUPABASE_STORAGE_BUCKET`.
+   El backend lo usa con `SUPABASE_SERVICE_ROLE_KEY`; los PDF solo salen por URL firmadas de pocos
+   minutos (`STORAGE_URL_TTL_SECONDS`). No hacen falta credenciales de AWS ni rol IAM.
+3. **IP elástica** y registro DNS A del dominio de la API hacia ella.
+4. Instalar Docker y el plugin de Compose (Amazon Linux 2023: `sudo dnf install -y docker`, plugin
    `docker-compose-plugin` o el binario oficial; `sudo systemctl enable --now docker`).
 
 Primer despliegue en la instancia: crear la carpeta y su `.env` (el resto lo copia el CD):
@@ -109,7 +109,7 @@ src/analizador/
 ├── db/                  # motor/sesiones SQLAlchemy y migraciones Alembic
 ├── models/              # ORM (sección 6.3 del DAS)
 ├── schemas.py           # entrada/salida de la API
-├── integrations/        # S3, Supabase Auth, Anthropic, NVIDIA
+├── integrations/        # Supabase (Auth y Storage), Anthropic, NVIDIA
 ├── messaging/           # topología de RabbitMQ y publicador
 ├── pipeline/            # grafo LangGraph y etapas 1–11 (stubs)
 ├── worker/              # consumidor de colas (C-03)
@@ -128,6 +128,7 @@ src/analizador/
 | Taxonomía y estados | Los del reto (RF-01, RF-04) hasta resolver Q-16 / Q-17 |
 | Autenticación | JWT de Supabase verificado con JWKS (claves asimétricas) |
 | Autorización | Organización y rol desde `miembros` (ADR-014); `X-Organizacion-Id` si el usuario tiene varias |
+| Almacenamiento | Supabase Storage (bucket privado, API REST) en lugar de AWS S3; ver `docs/PLAN.md` |
 | Fuera por ahora | Seguridad por fila (P-22), cuotas (P-23), contratos de IA (P-18), CI/CD |
 
 ## Pendiente (stubs y TODO)
