@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
 from analizador.core.config import get_settings
-from analizador.integrations import s3
+from analizador.integrations import almacenamiento
 from analizador.models import Item, Licitacion, Requisito, Resultado, TrabajoProcesamiento
 from analizador.models.enums import EstadoTrabajo, TipoTrabajo
 from analizador.pipeline import progreso
@@ -66,15 +66,15 @@ async def cargar_pliego(
 ) -> LicitacionCreada:
     contenido = await _leer_pdf(archivo)
     nombre_archivo = (archivo.filename or "pliego.pdf")[:300]
-    clave = s3.nueva_clave_pliego(contexto.organizacion_id)
-    await s3.subir_pdf(clave, contenido)
+    clave = almacenamiento.nueva_clave_pliego(contexto.organizacion_id)
+    await almacenamiento.subir_pdf(clave, contenido)
 
     licitacion = Licitacion(
         organizacion_id=contexto.organizacion_id,
         creado_por=contexto.usuario.usuario_id,
         titulo=titulo or nombre_archivo,
         nombre_archivo=nombre_archivo,
-        s3_key=clave,
+        storage_key=clave,
     )
     session.add(licitacion)
     await session.flush()
@@ -134,7 +134,7 @@ async def detalle(
     return LicitacionDetalle(
         **resumen.model_dump(),
         justificacion=licitacion.justificacion,
-        url_pdf=s3.url_temporal(licitacion.s3_key),
+        url_pdf=await almacenamiento.url_temporal(licitacion.storage_key),
         requisitos=[RequisitoOut.model_validate(r) for r in requisitos],
     )
 

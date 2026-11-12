@@ -25,15 +25,14 @@ class Settings(BaseSettings):
     # --- RabbitMQ (C-04) ---
     rabbitmq_url: SecretStr
 
-    # --- AWS S3 (C-07) ---
-    aws_region: str
-    s3_bucket: str
-    s3_presign_ttl_seconds: int = Field(default=300, gt=0)
-
-    # --- Supabase Auth (C-08) ---
+    # --- Supabase: Auth (C-08) y Storage (C-07, sustituye a S3) ---
     supabase_url: str
     supabase_jwt_audience: str = "authenticated"
+    # Solo backend (S-06): invita usuarios y accede al bucket privado.
     supabase_service_role_key: SecretStr | None = None
+    supabase_storage_bucket: str
+    # Vigencia de las URL firmadas del PDF (P-14, S-10: "pocos minutos").
+    storage_url_ttl_seconds: int = Field(default=300, gt=0)
 
     # --- Límites (S-08) ---
     max_pdf_mb: int = Field(gt=0)

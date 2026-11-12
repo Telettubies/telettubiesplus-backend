@@ -15,7 +15,7 @@ from analizador.models.enums import OrigenFragmento, TipoFuenteConocimiento, str
 class FuenteConocimiento(UUIDPk, Timestamps, Base):
     """Documento o registro de la base de conocimiento.
 
-    Q-05 (formato de carga) sigue abierta: se admite un archivo en S3, datos
+    Q-05 (formato de carga) sigue abierta: se admite un archivo en el almacén, datos
     estructurados, o ambos. Ajustar cuando se decida.
     """
 
@@ -28,7 +28,7 @@ class FuenteConocimiento(UUIDPk, Timestamps, Base):
         str_enum(TipoFuenteConocimiento, "tipo_fuente_conocimiento")
     )
     titulo: Mapped[str] = mapped_column(String(300))
-    s3_key: Mapped[str | None] = mapped_column(String(1024))
+    storage_key: Mapped[str | None] = mapped_column(String(1024))
     datos: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
