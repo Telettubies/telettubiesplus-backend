@@ -192,6 +192,27 @@ class FuenteConocimientoOut(_Orm):
     creado_en: datetime
 
 
+class ResumenConocimiento(BaseModel):
+    """Qué hay cargado en la base de conocimiento de la organización (HU-B05, HU-F04)."""
+
+    cargada: bool
+    empresa: str | None
+    cargada_en: datetime | None
+    anios_financieros: int
+    contratos: int
+    personas: int
+    certificaciones: int
+    capacidades: int
+    fragmentos_indexados: int
+    # Último trabajo de indexación (HU-B06); nulo si nunca se cargó la base.
+    indexacion: TrabajoOut | None
+
+
+class ConocimientoCargado(BaseModel):
+    resumen: ResumenConocimiento
+    trabajo: TrabajoOut
+
+
 # --- Límites de uso (HU-B26) ------------------------------------------------------
 
 

@@ -134,7 +134,7 @@ src/analizador/
 ## Pendiente (stubs y TODO)
 
 - Etapas del pipeline (`pipeline/etapas.py`): todas registran progreso pero no procesan nada.
-- Carga e indexación de la base de conocimiento: bloqueadas por Q-05.
+- Indexación de la base de conocimiento (HU-B06): el trabajo se encola pero aún no vectoriza.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija hasta decidir el
   modelo de embeddings (P-10).
@@ -166,3 +166,15 @@ defecto son provisionales (P-23 no fija cifras).
 **Tope de gasto en Anthropic (tarea manual, no de código):** en la consola de Anthropic,
 *Settings → Limits*, fijar un límite de gasto mensual acorde al presupuesto de 40 € (RC-02) y una
 alerta de consumo. Es la última barrera si fallan las cuotas.
+
+## Base de conocimiento (HU-B05)
+
+Un administrador carga un único archivo JSON con `POST /api/conocimiento` (campo `archivo`). El
+contrato está en `src/analizador/contratos/conocimiento.py` y hay un ejemplo sintético completo
+en [docs/ejemplos/base_conocimiento.json](docs/ejemplos/base_conocimiento.json).
+
+- El archivo se valida entero: si algo falla responde 422 con **todos** los errores, cada uno con
+  su campo (`contratos[2].fecha_fin`), su ubicación y un mensaje; no se guarda nada.
+- Cada carga reemplaza a la anterior por completo y en una sola transacción.
+- Tras guardar se encola la indexación; `GET /api/conocimiento` muestra el resumen y su estado, y
+  `POST /api/conocimiento/indexacion` la vuelve a lanzar si falló.

@@ -1,6 +1,21 @@
 {
   "components": {
     "schemas": {
+      "Body_cargar_api_conocimiento_post": {
+        "properties": {
+          "archivo": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Base de conocimiento en JSON",
+            "title": "Archivo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "archivo"
+        ],
+        "title": "Body_cargar_api_conocimiento_post",
+        "type": "object"
+      },
       "Body_cargar_pliego_api_licitaciones_post": {
         "properties": {
           "archivo": {
@@ -38,6 +53,22 @@
           "rol"
         ],
         "title": "CambioRolIn",
+        "type": "object"
+      },
+      "ConocimientoCargado": {
+        "properties": {
+          "resumen": {
+            "$ref": "#/components/schemas/ResumenConocimiento"
+          },
+          "trabajo": {
+            "$ref": "#/components/schemas/TrabajoOut"
+          }
+        },
+        "required": [
+          "resumen",
+          "trabajo"
+        ],
+        "title": "ConocimientoCargado",
         "type": "object"
       },
       "EstadoCumplimiento": {
@@ -676,6 +707,86 @@
         "title": "ResultadoOut",
         "type": "object"
       },
+      "ResumenConocimiento": {
+        "description": "Qué hay cargado en la base de conocimiento de la organización (HU-B05, HU-F04).",
+        "properties": {
+          "anios_financieros": {
+            "title": "Anios Financieros",
+            "type": "integer"
+          },
+          "capacidades": {
+            "title": "Capacidades",
+            "type": "integer"
+          },
+          "cargada": {
+            "title": "Cargada",
+            "type": "boolean"
+          },
+          "cargada_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargada En"
+          },
+          "certificaciones": {
+            "title": "Certificaciones",
+            "type": "integer"
+          },
+          "contratos": {
+            "title": "Contratos",
+            "type": "integer"
+          },
+          "empresa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empresa"
+          },
+          "fragmentos_indexados": {
+            "title": "Fragmentos Indexados",
+            "type": "integer"
+          },
+          "indexacion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrabajoOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personas": {
+            "title": "Personas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cargada",
+          "empresa",
+          "cargada_en",
+          "anios_financieros",
+          "contratos",
+          "personas",
+          "certificaciones",
+          "capacidades",
+          "fragmentos_indexados",
+          "indexacion"
+        ],
+        "title": "ResumenConocimiento",
+        "type": "object"
+      },
       "RevisionCreada": {
         "properties": {
           "revision": {
@@ -778,8 +889,9 @@
         "type": "object"
       },
       "TipoFuenteConocimiento": {
-        "description": "Tipos de fuente de la base de conocimiento (sección 6.3).",
+        "description": "Tipos de fuente de la base de conocimiento (sección 6.3).\n\n`empresa` no está en el DAS: guarda los datos generales del oferente (razón social, NIT).",
         "enum": [
+          "empresa",
           "contrato",
           "hoja_de_vida",
           "financiero",
@@ -1027,6 +1139,126 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/conocimiento": {
+      "get": {
+        "description": "Qué hay cargado y en qué estado está su indexación (HU-F04).",
+        "operationId": "resumen_api_conocimiento_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenConocimiento"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resumen",
+        "tags": [
+          "base de conocimiento"
+        ]
+      },
+      "post": {
+        "description": "Valida el archivo completo, reemplaza la base anterior y encola la indexación.\n\nEl reemplazo es atómico: o queda guardada la versión nueva completa, o se conserva la\nanterior. Si el archivo no cumple el contrato se rechaza entero.",
+        "operationId": "cargar_api_conocimiento_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_cargar_api_conocimiento_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConocimientoCargado"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cargar",
+        "tags": [
+          "base de conocimiento"
+        ]
+      }
+    },
     "/api/conocimiento/fuentes": {
       "get": {
         "operationId": "listar_api_conocimiento_fuentes_get",
@@ -1084,9 +1316,12 @@
         "tags": [
           "base de conocimiento"
         ]
-      },
+      }
+    },
+    "/api/conocimiento/indexacion": {
       "post": {
-        "operationId": "cargar_api_conocimiento_fuentes_post",
+        "description": "Vuelve a indexar la base ya cargada, por ejemplo tras un fallo de la indexación.",
+        "operationId": "reindexar_api_conocimiento_indexacion_post",
         "parameters": [
           {
             "in": "header",
@@ -1107,6 +1342,16 @@
           }
         ],
         "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrabajoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -1116,14 +1361,6 @@
               }
             },
             "description": "Validation Error"
-          },
-          "501": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
           }
         },
         "security": [
@@ -1131,7 +1368,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Cargar",
+        "summary": "Reindexar",
         "tags": [
           "base de conocimiento"
         ]
