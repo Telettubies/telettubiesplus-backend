@@ -330,11 +330,13 @@ class ExtractorFalso:
     """
 
     respuestas: dict[str, list[Any]] = field(default_factory=dict)
+    # Respuesta cuando ningún fragmento coincide (por omisión, una extracción vacía).
+    por_defecto: Any = None
     llamadas: list[dict[str, Any]] = field(default_factory=list)
     en_curso: int = 0
     maximo_simultaneo: int = 0
 
-    async def __call__(self, **kwargs: Any) -> tuple[ExtraccionSeccion, Uso]:
+    async def __call__(self, **kwargs: Any) -> tuple[Any, Uso]:
         self.llamadas.append(kwargs)
         self.en_curso += 1
         self.maximo_simultaneo = max(self.maximo_simultaneo, self.en_curso)
@@ -347,6 +349,8 @@ class ExtractorFalso:
                     if isinstance(respuesta, Exception):
                         raise respuesta
                     return respuesta, Uso(entrada=120, salida=40, cache_leidos=900)
+            if self.por_defecto is not None:
+                return self.por_defecto, Uso(entrada=100, salida=5)
             return ExtraccionSeccion(requisitos=[]), Uso(entrada=100, salida=5)
         finally:
             self.en_curso -= 1
