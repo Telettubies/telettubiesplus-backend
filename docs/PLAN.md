@@ -50,7 +50,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 7 | HU-B09 | Orquestar el pipeline y tolerar fallos | hecha | sar | 501ae68, 91e3796 | #12 |
 | 8 | HU-B26 | Limitar el uso para proteger créditos y presupuesto | hecha | sar | 7fef804, ae25c67 | #13 |
 | 9 | HU-B05 | Cargar la base de conocimiento estructurada | hecha | sar | 7af67da, b678f1a, 1b85d41 | #14 |
-| 10 | HU-B06 | Indexar los documentos de la empresa | pendiente | sar | | |
+| 10 | HU-B06 | Indexar los documentos de la empresa | hecha | sar | a98eff5, 4bd01d3 | #15 |
 | 11 | HU-B10 | Leer el texto del pliego, incluidas páginas escaneadas | pendiente | sar | | |
 | 12 | HU-B11 | Dividir el pliego en secciones con su numeral | pendiente | sar | | |
 | 13 | HU-B12 | Filtrar secciones sin requisitos | pendiente | sar | | |
