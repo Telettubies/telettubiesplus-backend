@@ -176,6 +176,10 @@ class Item(UUIDPk, Timestamps, Base):
     )
     # Para ítems numéricos: {"campo", "operador", "valor", "valor_texto", "unidad"}.
     parametros: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Evidencia recuperada de la base de conocimiento para verificar el ítem (HU-B16):
+    # [{"fragmento_id", "fuente_id", "fuente", "tipo_fuente", "texto", "distancia", "puntaje"}].
+    # NULL = aún no se buscó; [] = se buscó y no hay evidencia relevante.
+    candidatos: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
 
     requisito: Mapped[Requisito] = relationship(back_populates="items")
     resultado: Mapped["Resultado | None"] = relationship(

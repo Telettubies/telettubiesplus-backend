@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     nvidia_model_embeddings: str | None = None
     nvidia_model_chat: str | None = None
     nvidia_model_rerank: str | None = None
+    # El reranker no usa la API compatible con OpenAI: tiene su propia URL (P-11).
+    nvidia_rerank_url: str | None = None
     # Textos por llamada al modelo de embeddings (HU-B06).
     embeddings_lote: int = Field(default=32, gt=0)
     # Límite de velocidad y reintentos (R-02: ~40 peticiones/min según fuentes no oficiales, Q-13).
@@ -90,6 +92,16 @@ class Settings(BaseSettings):
     # Veces que la comprobación de cobertura reintenta las secciones sin procesar (HU-B14).
     cobertura_max_reintentos: int = Field(default=2, ge=0)
 
+    # --- Recuperación de evidencia (HU-B16) ---
+    # Fragmentos que se piden a la búsqueda vectorial y cuántos se conservan por ítem.
+    evidencia_candidatos: int = Field(default=20, gt=0)
+    evidencia_max: int = Field(default=5, gt=0)
+    # Distancia coseno (0 a 2) a partir de la cual un fragmento ya no se considera relevante.
+    # Valor provisional (Q-14).
+    evidencia_distancia_maxima: float = Field(default=1.0, gt=0, le=2)
+    # Reranker de NVIDIA (P-11, no aprobada): apagado salvo que se active aquí.
+    rerank_activo: bool = False
+
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
     # Tiempo máximo de un trabajo antes de darlo por fallido (S-09). Valor por confirmar.
@@ -113,6 +125,7 @@ class Settings(BaseSettings):
         "nvidia_model_embeddings",
         "nvidia_model_chat",
         "nvidia_model_rerank",
+        "nvidia_rerank_url",
         "supabase_service_role_key",
         "anthropic_api_key",
         "nvidia_api_key",

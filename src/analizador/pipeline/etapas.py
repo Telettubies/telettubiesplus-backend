@@ -13,6 +13,7 @@ from analizador.models.enums import EstadoLicitacion
 from analizador.pipeline import (
     catalogo,
     cobertura,
+    evidencia,
     extraccion,
     filtrado,
     lectura,
@@ -88,8 +89,8 @@ async def comprobar_cobertura(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("recuperacion_evidencia")
 async def recuperar_evidencia(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 6): embeddings de NVIDIA + pgvector, filtrando SIEMPRE por organizacion_id
-    # (S-03). Reranker opcional (P-11).
+    # Etapa 6: fragmentos de la base de conocimiento más cercanos a cada ítem (HU-B16).
+    await evidencia.ejecutar(estado)
     return {}
 
 
