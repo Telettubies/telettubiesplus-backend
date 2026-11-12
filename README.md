@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 2 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
+- Etapas 3 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -198,3 +198,16 @@ La imagen Docker incluye `tesseract-ocr` y `tesseract-ocr-spa`. En local, sin el
 instalado, la prueba de Tesseract real se omite (en el CI se ejecuta).
 
 PyMuPDF tiene licencia AGPL (riesgo R-13 del DAS si el proyecto continúa tras la hackatón).
+
+## División en secciones (HU-B11)
+
+La etapa 2 parte el texto del pliego en secciones por reglas, sin modelos
+(`pipeline/secciones.py`). Abre sección cada numeral jerárquico al inicio de línea (`3.2.1
+Capacidad jurídica`, `4. CRONOGRAMA`) y cada `CAPÍTULO`, `TÍTULO`, `SECCIÓN`, `ANEXO`, `FORMATO`
+o `APÉNDICE` numerado. No abren sección las entradas de la tabla de contenido, los ítems de una
+lista numerada ni las cifras al inicio de una línea. El texto anterior al primer encabezado
+forma la sección «Preámbulo».
+
+Las secciones son tramos contiguos del texto: su concatenación reproduce el pliego exacto, y la
+etapa lo comprueba por longitud antes de guardarlas. Una sección más larga que
+`SECCION_MAX_CARACTERES` se parte en tramos con el mismo numeral.

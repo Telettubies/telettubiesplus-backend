@@ -52,7 +52,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 9 | HU-B05 | Cargar la base de conocimiento estructurada | hecha | sar | 7af67da, b678f1a, 1b85d41 | #14 |
 | 10 | HU-B06 | Indexar los documentos de la empresa | hecha | sar | a98eff5, 4bd01d3 | #15 |
 | 11 | HU-B10 | Leer el texto del pliego, incluidas páginas escaneadas | hecha | sar | b5e06e2, bfb9b3e | #16 |
-| 12 | HU-B11 | Dividir el pliego en secciones con su numeral | pendiente | sar | | |
+| 12 | HU-B11 | Dividir el pliego en secciones con su numeral | hecha | sar | 2e7690a, 50bb6b5 | #17 |
 | 13 | HU-B12 | Filtrar secciones sin requisitos | pendiente | sar | | |
 | 14 | HU-B13 | Extraer y atomizar requisitos | pendiente | sar | | |
 | 15 | HU-B14 | Comprobar la cobertura del pliego | pendiente | sar | | |
@@ -121,3 +121,14 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 ## 7. Deuda técnica
 
 Se completa al cerrar cada historia.
+
+- **Sin pruebas contra servicios reales.** Supabase Storage, NVIDIA y Anthropic se prueban con
+  dobles: las claves locales están vacías. Falta una pasada manual con credenciales reales.
+- **Pliego real (HU-B11, HU-B15).** La división en secciones se probó con un pliego sintético.
+  Falta medir los numerales detectados contra la tabla de contenido del pliego de la demo (Q-11).
+- **Encabezados que empiezan con sigla** (`3.2 RUP del proponente`) no abren sección: tienen la
+  misma forma que una cifra (`1.5 SMMLV por cada día`). El texto queda en la sección anterior.
+- **Tablas sin bordes (HU-B10).** pdfplumber solo detecta tablas dibujadas con líneas.
+- **Tamaño de la imagen Docker.** PyMuPDF 2.1 arrastra `onnxruntime` y `numpy`.
+- **Índice vectorial.** Sin dimensión fija ni índice hasta decidir el modelo (P-10).
+- **Chat (HU-B24).** Los límites están aplicados, pero nada registra todavía las preguntas.
