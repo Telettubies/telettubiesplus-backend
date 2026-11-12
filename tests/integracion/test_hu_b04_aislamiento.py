@@ -229,8 +229,28 @@ async def test_la_url_temporal_solo_se_firma_para_archivos_propios(
     assert escenario.matriz_alfa.storage_key in propio.json()["url_pdf"]
 
 
+async def test_renovar_url_pdf_solo_firma_objetos_propios_y_evita_cache(
+    cliente: httpx.AsyncClient, escenario: Escenario, almacen: AlmacenFalso
+) -> None:
+    ruta = f"/api/licitaciones/{escenario.matriz_alfa.licitacion_id}/pdf-url"
+    ajeno = await cliente.get(ruta, headers=escenario.beta.cabeceras)
+    assert ajeno.status_code == 404
+    assert almacen.firmadas == []
+
+    propio = await cliente.get(ruta, headers=escenario.alfa.cabeceras)
+    assert propio.status_code == 200
+    assert propio.headers["cache-control"] == "no-store"
+    assert escenario.matriz_alfa.storage_key in propio.json()["pdf_url_temporal"]
+    assert almacen.firmadas == [escenario.matriz_alfa.storage_key]
+
+
+@pytest.mark.parametrize("sufijo", ["", "/pdf-url"], ids=["detalle", "renovacion"])
 async def test_no_se_firma_una_clave_fuera_del_prefijo_de_la_organizacion(
-    cliente: httpx.AsyncClient, sesion: AsyncSession, escenario: Escenario, almacen: AlmacenFalso
+    cliente: httpx.AsyncClient,
+    sesion: AsyncSession,
+    escenario: Escenario,
+    almacen: AlmacenFalso,
+    sufijo: str,
 ) -> None:
     """Aunque un dato corrupto apunte al archivo de otra organización, no se entrega."""
     propia = await sesion.get(Licitacion, escenario.matriz_beta.licitacion_id)
@@ -239,7 +259,7 @@ async def test_no_se_firma_una_clave_fuera_del_prefijo_de_la_organizacion(
     await sesion.commit()
 
     respuesta = await cliente.get(
-        f"/api/licitaciones/{escenario.matriz_beta.licitacion_id}",
+        f"/api/licitaciones/{escenario.matriz_beta.licitacion_id}{sufijo}",
         headers=escenario.beta.cabeceras,
     )
     assert respuesta.status_code == 404
