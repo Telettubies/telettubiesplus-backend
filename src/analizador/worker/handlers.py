@@ -23,7 +23,7 @@ from analizador.db.session import get_sessionmaker
 from analizador.messaging.mensajes import MensajeTrabajo
 from analizador.models import TrabajoProcesamiento
 from analizador.models.enums import EstadoLicitacion, EstadoTrabajo, TipoTrabajo
-from analizador.pipeline import catalogo, etapas, grafo, progreso
+from analizador.pipeline import catalogo, etapas, grafo, indexacion, progreso
 from analizador.pipeline.errores import AnalisisError
 from analizador.pipeline.estado import EstadoAnalisis
 
@@ -64,9 +64,8 @@ async def _reevaluacion(trabajo: TrabajoProcesamiento, _grafo: Any) -> None:
 
 
 async def _indexacion(trabajo: TrabajoProcesamiento, _grafo: Any) -> None:
-    # TODO(F-02): fragmentar la fuente de conocimiento, generar embeddings (NVIDIA) y
-    # guardarlos en `fragmentos`. Depende de Q-05 (formato de carga) y P-10 (modelo).
-    logger.warning("Indexación sin implementar (trabajo %s)", trabajo.id)
+    # F-02: fragmentar la base de conocimiento, vectorizarla y guardarla en pgvector.
+    await indexacion.indexar(trabajo)
 
 
 HANDLERS: dict[TipoTrabajo, Handler] = {
