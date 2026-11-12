@@ -315,3 +315,14 @@ su fuente se compara entera, para que añadir texto a un fragmento real no cuent
 
 El texto literal de cada requisito se compara igual con su sección del pliego;
 `requisitos.texto_verificado = false` señala una posible reformulación del modelo.
+
+## Revisión humana de ítems dudosos (HU-B20)
+
+Tras validar las citas, la etapa 8 decide qué ítems no puede resolver el sistema por sí solo
+(`pipeline/revision.py`): los de un requisito marcado como ambiguo, los que tienen una cita
+sin verificar, los de confianza menor que `REVISION_CONFIANZA_MINIMA` y los que la verificación
+no pudo comparar. Cada uno guarda todos sus motivos en `resultados.motivo_revision`.
+
+«Revisión» no es un cuarto estado guardado: es `requiere_revision` junto al estado propuesto.
+Se presenta como `revision` y nunca cuenta como «cumple». Un ítem que ya revisó una persona no
+vuelve a marcarse.

@@ -20,6 +20,7 @@ from analizador.pipeline import (
     lectura,
     localizacion,
     progreso,
+    revision,
     secciones,
     verificacion,
 )
@@ -107,6 +108,8 @@ async def verificar(estado: EstadoAnalisis) -> dict[str, Any]:
 async def validar_citas(estado: EstadoAnalisis) -> dict[str, Any]:
     # Etapa 8: cada cita se comprueba contra su fuente; si no coincide, a revisión (HU-B18).
     await citas.ejecutar(estado)
+    # Con las citas ya comprobadas se decide qué ítems necesitan revisión humana (HU-B20).
+    await revision.ejecutar(estado)
     return {}
 
 
