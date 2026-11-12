@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     # Una sección más larga se parte en tramos de este tamaño para la extracción (HU-B11).
     seccion_max_caracteres: int = Field(default=12000, ge=1000)
 
+    # Secciones por llamada al filtro de NVIDIA y tamaño máximo de un lote (HU-B12).
+    filtro_lote: int = Field(default=8, gt=0)
+    filtro_max_caracteres_lote: int = Field(default=24000, ge=1000)
+
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
     # Tiempo máximo de un trabajo antes de darlo por fallido (S-09). Valor por confirmar.

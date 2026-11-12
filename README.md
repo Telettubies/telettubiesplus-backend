@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 3 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
+- Etapas 4 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -211,3 +211,16 @@ forma la sección «Preámbulo».
 Las secciones son tramos contiguos del texto: su concatenación reproduce el pliego exacto, y la
 etapa lo comprueba por longitud antes de guardarlas. Una sección más larga que
 `SECCION_MAX_CARACTERES` se parte en tramos con el mismo numeral.
+
+## Filtro de secciones (HU-B12)
+
+La etapa 3 pregunta a un modelo de NVIDIA (`NVIDIA_MODEL_FILTRO`), por lotes, qué secciones no
+contienen requisitos, para no gastar presupuesto de Claude en antecedentes, glosarios o minutas.
+El filtro solo puede reducir costo, nunca cobertura:
+
+- Una sección se descarta únicamente con un "no" explícito, válido y con motivo. El motivo queda
+  guardado en `secciones.motivo_filtro`.
+- Duda, respuesta inválida, sección sin respuesta, modelo sin configurar o NVIDIA caído: la
+  sección pasa a extracción.
+- Aunque el modelo la descarte, una sección que mencione causales de rechazo o requisitos
+  habilitantes pasa a extracción.

@@ -11,7 +11,7 @@ from functools import wraps
 from typing import Any
 
 from analizador.models.enums import EstadoLicitacion
-from analizador.pipeline import catalogo, lectura, progreso, secciones
+from analizador.pipeline import catalogo, filtrado, lectura, progreso, secciones
 from analizador.pipeline.estado import EstadoAnalisis
 
 Nodo = Callable[[EstadoAnalisis], Awaitable[dict[str, Any]]]
@@ -50,8 +50,8 @@ async def dividir_secciones(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("filtrado")
 async def filtrar(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 3): marcar `secciones.tiene_requisitos` con el modelo de NVIDIA
-    # (integrations.nvidia, NVIDIA_MODEL_FILTRO).
+    # Etapa 3: descartar con NVIDIA las secciones sin requisitos (HU-B12).
+    await filtrado.ejecutar(estado)
     return {}
 
 

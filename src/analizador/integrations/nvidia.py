@@ -100,3 +100,28 @@ async def embeddings(textos: list[str], tipo: Literal["query", "passage"]) -> li
         )
     )
     return [dato.embedding for dato in respuesta.data]
+
+
+async def completar(
+    *, modelo: str | None, variable: str, sistema: str, usuario: str, max_tokens: int = 2000
+) -> str:
+    """Respuesta de texto de un modelo de chat de NVIDIA (filtro de secciones, chat).
+
+    S-07: el contenido de los documentos va en `usuario`, delimitado como datos; `sistema`
+    lleva solo las instrucciones. R-06: el endpoint puede ignorar la petición de salida en
+    JSON, así que quien llama valida la respuesta contra su contrato.
+    """
+    if not modelo:
+        raise ModeloNoConfiguradoError(f"{variable} no está configurada")
+    respuesta = await llamar(
+        lambda: get_client().chat.completions.create(
+            model=modelo,
+            messages=[
+                {"role": "system", "content": sistema},
+                {"role": "user", "content": usuario},
+            ],
+            temperature=0,
+            max_tokens=max_tokens,
+        )
+    )
+    return respuesta.choices[0].message.content or ""
