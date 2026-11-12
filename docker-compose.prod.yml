@@ -1,0 +1,153 @@
+# Despliegue de producción en una instancia EC2 (ADR-016).
+# El CD (.github/workflows/cd.yml) copia este archivo y deploy/ a la instancia, exporta
+# BACKEND_IMAGE y BACKEND_TAG (imagen de GHCR del commit) y ejecuta "pull" + "up".
+# Operación manual en la instancia (usa BACKEND_IMAGE/BACKEND_TAG del .env):
+#   docker compose -f docker-compose.prod.yml up -d --wait
+# Build local (sin registro):
+#   docker compose -f docker-compose.prod.yml up -d --build --wait
+#
+# Solo Caddy publica puertos (80/443) (S-01). PostgreSQL y RabbitMQ quedan en la red interna.
+# Todas las credenciales salen de .env (S-02, S-06); este archivo no contiene secretos.
+name: analizador
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-backend: &backend
+  image: ${BACKEND_IMAGE:-analizador-backend}:${BACKEND_TAG:-latest}
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file: .env
+  environment: &backend-env
+    APP_ENV: production
+    # URLs internas construidas desde las credenciales del .env (sobrescriben las del archivo).
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+  restart: unless-stopped
+  logging: *logging
+  networks: [interna]
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?definir en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?definir en .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging: *logging
+    networks: [interna]
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    hostname: rabbitmq # el nodo guarda sus datos por nombre de host
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?definir en .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?definir en .env}
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+    ports:
+      # Consola de administración solo en loopback: acceder con túnel SSH
+      #   ssh -L 15672:127.0.0.1:15672 ec2-user@<ip>
+      - "127.0.0.1:15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *logging
+    networks: [interna]
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  # Migraciones: se ejecuta una vez en cada despliegue y termina.
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    command: ["analizador-api"]
+    environment:
+      <<: *backend-env
+      # Confiar en X-Forwarded-* de Caddy: la API no se publica fuera de la red interna.
+      FORWARDED_ALLOW_IPS: "*"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  worker:
+    <<: *backend
+    command: ["analizador-worker"]
+    healthcheck:
+      disable: true
+    # Un trabajo en curso vuelve a la cola si no termina (prefetch=1, sin ack).
+    stop_grace_period: 60s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+
+  caddy:
+    image: caddy:2.10-alpine
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-:80}
+      PROXY_MAX_BODY: ${PROXY_MAX_BODY:-50MB}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
+    networks: [interna]
+
+networks:
+  interna:
+
+volumes:
+  pgdata:
+  rabbitmqdata:
+  caddy_data:
+  caddy_config:

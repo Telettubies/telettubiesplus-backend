@@ -1,0 +1,31 @@
+# Proxy inverso (S-01): único servicio publicado en la instancia.
+# API_DOMAIN en .env:
+#   - un dominio (api.ejemplo.com) → HTTPS automático con Let's Encrypt
+#     (requiere registro DNS A hacia la IP elástica y puertos 80/443 abiertos).
+#   - ":80" → solo HTTP por IP (pruebas, sin dominio).
+{$API_DOMAIN::80} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# Margen sobre MAX_PDF_MB; la API aplica el límite real (S-08).
+	request_body {
+		max_size {$PROXY_MAX_BODY:50MB}
+	}
+
+	reverse_proxy api:8000 {
+		health_uri /health
+		health_interval 15s
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

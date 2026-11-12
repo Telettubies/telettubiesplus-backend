@@ -17,6 +17,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+!.env.prod.example
 
 # Editores / SO
 .vscode/
