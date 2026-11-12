@@ -326,6 +326,42 @@
         "title": "LicitacionResumen",
         "type": "object"
       },
+      "LimitesOut": {
+        "properties": {
+          "analisis": {
+            "$ref": "#/components/schemas/UsoOut"
+          },
+          "chat": {
+            "$ref": "#/components/schemas/UsoOut"
+          },
+          "chat_max_caracteres": {
+            "title": "Chat Max Caracteres",
+            "type": "integer"
+          },
+          "max_pdf_mb": {
+            "title": "Max Pdf Mb",
+            "type": "integer"
+          },
+          "max_pdf_paginas": {
+            "title": "Max Pdf Paginas",
+            "type": "integer"
+          },
+          "ventana_horas": {
+            "title": "Ventana Horas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_pdf_mb",
+          "max_pdf_paginas",
+          "chat_max_caracteres",
+          "ventana_horas",
+          "analisis",
+          "chat"
+        ],
+        "title": "LimitesOut",
+        "type": "object"
+      },
       "MiembroOut": {
         "properties": {
           "creado_en": {
@@ -376,6 +412,20 @@
         ],
         "title": "PrecisionUbicacion",
         "type": "string"
+      },
+      "PreguntaIn": {
+        "properties": {
+          "pregunta": {
+            "minLength": 1,
+            "title": "Pregunta",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pregunta"
+        ],
+        "title": "PreguntaIn",
+        "type": "object"
       },
       "ProgresoOut": {
         "description": "Avance del análisis de una licitación, leído de PostgreSQL (HU-B08, ADR-015).",
@@ -871,6 +921,24 @@
         "title": "UbicacionOut",
         "type": "object"
       },
+      "UsoOut": {
+        "properties": {
+          "cuota": {
+            "title": "Cuota",
+            "type": "integer"
+          },
+          "usados": {
+            "title": "Usados",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usados",
+          "cuota"
+        ],
+        "title": "UsoOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1271,6 +1339,7 @@
     },
     "/api/licitaciones/{licitacion_id}/chat": {
       "post": {
+        "description": "Chat de la licitación (RF-13). La respuesta es de HU-B24; los límites ya se aplican.",
         "operationId": "chat_api_licitaciones__licitacion_id__chat_post",
         "parameters": [
           {
@@ -1301,6 +1370,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreguntaIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "422": {
             "content": {
@@ -1594,6 +1673,61 @@
         "summary": "Trabajos",
         "tags": [
           "licitaciones"
+        ]
+      }
+    },
+    "/api/limites": {
+      "get": {
+        "operationId": "limites_api_limites_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Limites",
+        "tags": [
+          "límites"
         ]
       }
     },

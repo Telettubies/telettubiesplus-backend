@@ -101,6 +101,11 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 8. **Formato de error.** Se conserva el de FastAPI (`{"detail": ...}`); los errores no controlados
    responden 500 con un mensaje genérico.
 9. **Documentos de referencia.** `docs/das.pdf` y `docs/hu.pdf` no se versionan en este repositorio.
+10. **Límites provisionales (P-23, Q-13).** Con valor por defecto ajustable por entorno: 600
+    páginas por pliego, 20 análisis y 200 preguntas al chat por organización en 24 horas, 2000
+    caracteres por pregunta, 30 peticiones por minuto a NVIDIA con 5 reintentos, y 3 entregas y
+    3600 s por trabajo de análisis. La cuota es una ventana móvil de 24 horas, no un día de
+    calendario. Son cifras de partida, no decisiones del equipo: hay que confirmarlas.
 
 ## 6. Ambigüedades detectadas
 

@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from analizador.api import cuotas
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
 from analizador.core.config import get_settings
 from analizador.integrations import almacenamiento
@@ -29,6 +30,7 @@ from analizador.schemas import (
     LicitacionCreada,
     LicitacionDetalle,
     LicitacionResumen,
+    PreguntaIn,
     ProgresoOut,
     RequisitoOut,
     SeccionesProgreso,
@@ -162,6 +164,9 @@ async def cargar_pliego(
     if existente is not None:
         respuesta.status_code = status.HTTP_200_OK
         return existente
+
+    # Solo un análisis nuevo consume cuota; un duplicado no gasta créditos (S-08).
+    await cuotas.verificar_cuota_analisis(session, contexto.organizacion_id)
 
     clave = almacenamiento.nueva_clave_pliego(contexto.organizacion_id)
     try:
@@ -367,10 +372,20 @@ async def reintentar(
 
 
 @router.post("/{licitacion_id}/chat", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-async def chat(licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep) -> None:
-    # TODO(RF-13, F-06): chat con el contexto de la licitación (NVIDIA + pgvector),
-    # filtrando la búsqueda vectorial por organización (S-03). Cuotas por organización (S-08).
+async def chat(
+    licitacion_id: uuid.UUID, datos: PreguntaIn, contexto: ContextoDep, session: SessionDep
+) -> None:
+    """Chat de la licitación (RF-13). La respuesta es de HU-B24; los límites ya se aplican."""
     await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    maximo = get_settings().chat_max_caracteres
+    if len(datos.pregunta) > maximo:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"La pregunta supera el máximo de {maximo} caracteres.",
+        )
+    await cuotas.verificar_cuota_chat(session, contexto.organizacion_id)
+    # TODO(HU-B24): responder con NVIDIA + db.busqueda.fragmentos_cercanos (organización y
+    # licitación) y registrar un EventoUso de tipo PREGUNTA_CHAT por cada pregunta respondida.
     raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "Chat no implementado")
 
 

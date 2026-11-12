@@ -149,3 +149,20 @@ src/analizador/
 - Si el worker se detiene a mitad, RabbitMQ reentrega el mensaje y el análisis se reanuda. Tras
   `PIPELINE_MAX_INTENTOS` entregas, o al superar `PIPELINE_TIMEOUT_SEGUNDOS`, el trabajo se da
   por fallido.
+
+## Límites de uso (HU-B26)
+
+| Límite | Variable | Dónde se aplica |
+| --- | --- | --- |
+| Tamaño del PDF | `MAX_PDF_MB` | Al subir (413) |
+| Páginas del PDF | `MAX_PDF_PAGINAS` | En el worker, al leer el PDF |
+| Análisis por organización en 24 h | `CUOTA_ANALISIS_DIARIA` | Al subir (429); un PDF duplicado no cuenta |
+| Preguntas al chat por organización en 24 h | `CUOTA_CHAT_DIARIA`, `CHAT_MAX_CARACTERES` | En el chat (429 / 422) |
+| Peticiones por minuto a NVIDIA | `NVIDIA_PETICIONES_POR_MINUTO`, `NVIDIA_MAX_REINTENTOS` | En cada llamada, con reintento y espera ante 429 |
+
+`GET /api/limites` devuelve los límites vigentes y el consumo de la organización. Los valores por
+defecto son provisionales (P-23 no fija cifras).
+
+**Tope de gasto en Anthropic (tarea manual, no de código):** en la consola de Anthropic,
+*Settings → Limits*, fijar un límite de gasto mensual acorde al presupuesto de 40 € (RC-02) y una
+alerta de consumo. Es la última barrera si fallan las cuotas.

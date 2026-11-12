@@ -190,3 +190,28 @@ class FuenteConocimientoOut(_Orm):
     tipo: TipoFuenteConocimiento
     titulo: str
     creado_en: datetime
+
+
+# --- Límites de uso (HU-B26) ------------------------------------------------------
+
+
+class UsoOut(BaseModel):
+    usados: int
+    cuota: int
+
+
+class LimitesOut(BaseModel):
+    max_pdf_mb: int
+    max_pdf_paginas: int
+    chat_max_caracteres: int
+    # Las cuotas se cuentan en una ventana móvil de estas horas.
+    ventana_horas: int
+    analisis: UsoOut
+    chat: UsoOut
+
+
+# --- Chat (RF-13) -----------------------------------------------------------------
+
+
+class PreguntaIn(BaseModel):
+    pregunta: str = Field(min_length=1)
