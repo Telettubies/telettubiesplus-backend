@@ -133,7 +133,7 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 6 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
+- Etapas 7 a 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
 - Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
@@ -267,3 +267,18 @@ rectángulo por línea en coordenadas relativas (0..1), cada uno con su página:
 
 En las páginas escaneadas se usan las cajas del OCR. La proporción de ubicaciones de cada
 precisión queda en `detalle.ubicaciones` del trabajo.
+
+## Recuperación de evidencia (HU-B16)
+
+La etapa 6 busca, para cada ítem cualitativo, los fragmentos de la base de conocimiento de la
+organización más cercanos a su descripción (`pipeline/evidencia.py`). La descripción se
+vectoriza como consulta con `NVIDIA_MODEL_EMBEDDINGS` y la búsqueda en pgvector filtra siempre
+por organización y por ese mismo modelo. Se piden `EVIDENCIA_CANDIDATOS`, se descartan los que
+superan `EVIDENCIA_DISTANCIA_MAXIMA` y se conservan `EVIDENCIA_MAX` en `items.candidatos`, con
+el texto del fragmento y su fuente.
+
+- **Reranker (P-11, no aprobada):** apagado por defecto. Con `RERANK_ACTIVO=true`,
+  `NVIDIA_MODEL_RERANK` y `NVIDIA_RERANK_URL` reordena los candidatos; si falla, se usa el orden
+  de la búsqueda.
+- Sin fragmentos relevantes, o sin base indexada, el ítem sigue a verificación sin evidencia.
+- Los ítems numéricos no buscan evidencia: se verifican contra los datos estructurados.

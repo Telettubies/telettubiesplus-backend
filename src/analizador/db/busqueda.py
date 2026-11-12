@@ -23,8 +23,13 @@ async def fragmentos_cercanos(
     origen: OrigenFragmento,
     limite: int,
     licitacion_id: uuid.UUID | None = None,
+    modelo: str | None = None,
 ) -> list[tuple[Fragmento, float]]:
-    """Fragmentos más cercanos al vector, con su distancia coseno (0 = idéntico)."""
+    """Fragmentos más cercanos al vector, con su distancia coseno (0 = idéntico).
+
+    `modelo` limita la búsqueda a los fragmentos vectorizados con ese modelo de embeddings:
+    vectores de modelos distintos no son comparables ni tienen la misma dimensión (ADR-013).
+    """
     if origen is OrigenFragmento.PLIEGO and licitacion_id is None:
         raise ValueError("La búsqueda sobre el pliego exige la licitación")
 
@@ -36,5 +41,7 @@ async def fragmentos_cercanos(
     )
     if origen is OrigenFragmento.PLIEGO:
         consulta = consulta.where(Fragmento.licitacion_id == licitacion_id)
+    if modelo is not None:
+        consulta = consulta.where(Fragmento.modelo_embedding == modelo)
     filas = await session.execute(consulta.order_by(distancia).limit(limite))
     return [(fragmento, float(valor)) for fragmento, valor in filas]

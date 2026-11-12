@@ -11,8 +11,9 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
+import httpx
 import openai
 from openai import AsyncOpenAI
 
@@ -22,8 +23,23 @@ from analizador.integrations.limitador import LimitadorDeTasa
 
 logger = logging.getLogger(__name__)
 
+
+class TransitorioError(Exception):
+    """Fallo pasajero de una llamada HTTP directa a NVIDIA (reranker): 429, 5xx o red."""
+
+    def __init__(self, estado: int | None, retry_after: str | None = None) -> None:
+        super().__init__(f"estado {estado}")
+        self.estado = estado
+        self.retry_after = retry_after
+
+
 # 429, errores de red o de tiempo de espera y 5xx: tiene sentido volver a intentarlo.
-REINTENTABLES = (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError)
+REINTENTABLES = (
+    openai.RateLimitError,
+    openai.APIConnectionError,
+    openai.InternalServerError,
+    TransitorioError,
+)
 
 _dormir = asyncio.sleep
 
@@ -53,10 +69,15 @@ def _espera(exc: Exception, intento: int) -> float:
     """Segundos a esperar: lo que pida el proveedor (Retry-After) o espera exponencial."""
     settings = get_settings()
     maxima = settings.nvidia_espera_maxima_segundos
+    pedido: str | None = None
     if isinstance(exc, openai.APIStatusError):
+        pedido = exc.response.headers.get("retry-after")
+    elif isinstance(exc, TransitorioError):
+        pedido = exc.retry_after
+    if pedido is not None:
         try:
-            return min(float(exc.response.headers["retry-after"]), maxima)
-        except (KeyError, ValueError):
+            return min(float(pedido), maxima)
+        except ValueError:
             pass
     return min(settings.nvidia_espera_base_segundos * 2.0**intento, maxima)
 
@@ -125,3 +146,54 @@ async def completar(
         )
     )
     return respuesta.choices[0].message.content or ""
+
+
+def _cliente_http() -> httpx.AsyncClient:
+    return httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0))
+
+
+async def reordenar(consulta: str, pasajes: list[str]) -> list[tuple[int, float]]:
+    """Reordena los pasajes por relevancia para la consulta con el reranker de NVIDIA (P-11).
+
+    Devuelve `(índice del pasaje, puntaje)` de mayor a menor relevancia. El reranker no es
+    compatible con el SDK de OpenAI: se llama por HTTP a `NVIDIA_RERANK_URL`, con el mismo
+    límite por minuto y los mismos reintentos que el resto de llamadas a NVIDIA.
+    """
+    settings = get_settings()
+    if not settings.nvidia_model_rerank or not settings.nvidia_rerank_url:
+        raise ModeloNoConfiguradoError("NVIDIA_MODEL_RERANK o NVIDIA_RERANK_URL sin configurar")
+    if settings.nvidia_api_key is None:
+        raise ModeloNoConfiguradoError("NVIDIA_API_KEY no está configurada")
+    cabeceras = {
+        "Authorization": f"Bearer {settings.nvidia_api_key.get_secret_value()}",
+        "Accept": "application/json",
+    }
+    cuerpo = {
+        "model": settings.nvidia_model_rerank,
+        "query": {"text": consulta},
+        "passages": [{"text": pasaje} for pasaje in pasajes],
+        "truncate": "END",
+    }
+
+    async def pedir() -> Any:
+        try:
+            async with _cliente_http() as cliente:
+                respuesta = await cliente.post(
+                    settings.nvidia_rerank_url or "", headers=cabeceras, json=cuerpo
+                )
+        except httpx.HTTPError as exc:
+            raise TransitorioError(None) from exc
+        if respuesta.status_code == 429 or respuesta.status_code >= 500:
+            raise TransitorioError(respuesta.status_code, respuesta.headers.get("retry-after"))
+        if respuesta.status_code >= 400:
+            raise RuntimeError(f"El reranker respondió {respuesta.status_code}")
+        return respuesta.json()
+
+    datos = await llamar(pedir)
+    try:
+        orden = [(int(r["index"]), float(r["logit"])) for r in datos["rankings"]]
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError("La respuesta del reranker no tiene el formato esperado") from exc
+    if any(not 0 <= indice < len(pasajes) for indice, _ in orden):
+        raise RuntimeError("El reranker devolvió un índice fuera de rango")
+    return sorted(orden, key=lambda par: par[1], reverse=True)
