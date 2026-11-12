@@ -1,0 +1,197 @@
+"""Licitación y resultado del análisis (sección 6.3).
+
+Licitacion 1─* Seccion 1─* Requisito 1─1 UbicacionPliego
+                               Requisito 1─* Item 1─1 Resultado 1─* Revision
+
+Solo Licitacion lleva organizacion_id; las entidades hijas se aíslan a través de ella (S-03).
+Atributos, cardinalidades y reglas de integridad siguen en desarrollo [D].
+"""
+
+import uuid
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from analizador.db.base import Base, Timestamps, UUIDPk
+from analizador.models.enums import (
+    EstadoCumplimiento,
+    EstadoLicitacion,
+    PrecisionUbicacion,
+    TipoRequisito,
+    str_enum,
+)
+
+
+class Licitacion(UUIDPk, Timestamps, Base):
+    __tablename__ = "licitaciones"
+
+    organizacion_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizaciones.id", ondelete="CASCADE"), index=True
+    )
+    creado_por: Mapped[uuid.UUID]  # usuario_id de Supabase
+    titulo: Mapped[str] = mapped_column(String(300))
+    nombre_archivo: Mapped[str] = mapped_column(String(300))
+    # Nombre aleatorio bajo prefijo de organización (S-09).
+    s3_key: Mapped[str] = mapped_column(String(1024))
+    estado: Mapped[EstadoLicitacion] = mapped_column(
+        str_enum(EstadoLicitacion, "estado_licitacion"), default=EstadoLicitacion.PENDIENTE
+    )
+    # Q-04: valores de la recomendación sin decidir (P-05) → texto libre por ahora.
+    recomendacion: Mapped[str | None] = mapped_column(String(60))
+    justificacion: Mapped[str | None] = mapped_column(Text)
+
+    secciones: Mapped[list["Seccion"]] = relationship(
+        back_populates="licitacion", cascade="all, delete-orphan"
+    )
+    requisitos: Mapped[list["Requisito"]] = relationship(
+        back_populates="licitacion", cascade="all, delete-orphan"
+    )
+
+
+class Seccion(UUIDPk, Timestamps, Base):
+    """Parte del pliego asociada a un numeral y páginas (ADR-012)."""
+
+    __tablename__ = "secciones"
+
+    licitacion_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("licitaciones.id", ondelete="CASCADE"), index=True
+    )
+    orden: Mapped[int] = mapped_column(Integer)
+    numeral: Mapped[str | None] = mapped_column(String(50))
+    titulo: Mapped[str | None] = mapped_column(String(500))
+    pagina_inicio: Mapped[int] = mapped_column(Integer)
+    pagina_fin: Mapped[int] = mapped_column(Integer)
+    texto: Mapped[str] = mapped_column(Text)
+    # Etapa 3 (filtrado): None = aún no evaluada.
+    tiene_requisitos: Mapped[bool | None]
+    # Etapa 5 (comprobación de cobertura, ADR-012).
+    procesada: Mapped[bool] = mapped_column(default=False)
+
+    licitacion: Mapped[Licitacion] = relationship(back_populates="secciones")
+
+
+class Requisito(UUIDPk, Timestamps, Base):
+    __tablename__ = "requisitos"
+
+    licitacion_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("licitaciones.id", ondelete="CASCADE"), index=True
+    )
+    seccion_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("secciones.id", ondelete="CASCADE"), index=True
+    )
+    numeral: Mapped[str | None] = mapped_column(String(50))
+    tipo: Mapped[TipoRequisito] = mapped_column(str_enum(TipoRequisito, "tipo_requisito"))
+    texto_literal: Mapped[str] = mapped_column(Text)
+    # RF-07: marcar para revisión humana en lugar de asumir.
+    ambiguo: Mapped[bool] = mapped_column(default=False)
+    motivo_ambiguedad: Mapped[str | None] = mapped_column(Text)
+
+    licitacion: Mapped[Licitacion] = relationship(back_populates="requisitos")
+    ubicacion: Mapped["UbicacionPliego | None"] = relationship(
+        back_populates="requisito", cascade="all, delete-orphan", uselist=False
+    )
+    items: Mapped[list["Item"]] = relationship(
+        back_populates="requisito", cascade="all, delete-orphan", order_by="Item.orden"
+    )
+
+
+class UbicacionPliego(UUIDPk, Timestamps, Base):
+    """Ubicación del texto literal en el PDF (RF-26). La calcula el código, no el modelo (P-21).
+
+    `zonas`: lista de rectángulos en coordenadas relativas a la página (0..1),
+    independientes del zoom: [{"x0": .., "y0": .., "x1": .., "y1": ..}, ...].
+    """
+
+    __tablename__ = "ubicaciones_pliego"
+
+    requisito_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("requisitos.id", ondelete="CASCADE"), unique=True
+    )
+    pagina: Mapped[int] = mapped_column(Integer)
+    zonas: Mapped[list[dict[str, float]]] = mapped_column(JSONB, default=list)
+    precision: Mapped[PrecisionUbicacion] = mapped_column(
+        str_enum(PrecisionUbicacion, "precision_ubicacion")
+    )
+
+    requisito: Mapped[Requisito] = relationship(back_populates="ubicacion")
+
+
+class Item(UUIDPk, Timestamps, Base):
+    """Unidad verificable de un requisito (RF-02)."""
+
+    __tablename__ = "items"
+
+    requisito_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("requisitos.id", ondelete="CASCADE"), index=True
+    )
+    orden: Mapped[int] = mapped_column(Integer, default=0)
+    descripcion: Mapped[str] = mapped_column(Text)
+
+    requisito: Mapped[Requisito] = relationship(back_populates="items")
+    resultado: Mapped["Resultado | None"] = relationship(
+        back_populates="item", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class Resultado(UUIDPk, Timestamps, Base):
+    """Estado, evidencia y faltante de un ítem (RF-04, RF-05)."""
+
+    __tablename__ = "resultados"
+    __table_args__ = (
+        CheckConstraint(
+            "confianza IS NULL OR (confianza >= 0 AND confianza <= 1)", name="confianza"
+        ),
+    )
+
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("items.id", ondelete="CASCADE"), unique=True
+    )
+    estado: Mapped[EstadoCumplimiento] = mapped_column(
+        str_enum(EstadoCumplimiento, "estado_cumplimiento")
+    )
+    # Citas de la base de conocimiento: [{"fragmento_id": .., "texto": ..}, ...] (RF-05, P-04).
+    evidencia: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
+    faltante: Mapped[str | None] = mapped_column(Text)
+    # Q-14: umbrales sin decidir; se guarda el valor para poder aplicarlos después.
+    confianza: Mapped[float | None] = mapped_column(Float)
+    requiere_revision: Mapped[bool] = mapped_column(default=False)
+
+    item: Mapped[Item] = relationship(back_populates="resultado")
+    revisiones: Mapped[list["Revision"]] = relationship(
+        back_populates="resultado", cascade="all, delete-orphan", order_by="Revision.creado_en"
+    )
+
+
+class Revision(UUIDPk, Base):
+    """Cambio hecho por una persona sobre un resultado (RF-14, N-01). Solo inserción."""
+
+    __tablename__ = "revisiones"
+
+    resultado_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("resultados.id", ondelete="CASCADE"), index=True
+    )
+    usuario_id: Mapped[uuid.UUID]
+    estado_anterior: Mapped[EstadoCumplimiento] = mapped_column(
+        str_enum(EstadoCumplimiento, "estado_cumplimiento_anterior")
+    )
+    estado_nuevo: Mapped[EstadoCumplimiento] = mapped_column(
+        str_enum(EstadoCumplimiento, "estado_cumplimiento_nuevo")
+    )
+    comentario: Mapped[str] = mapped_column(Text)
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    resultado: Mapped[Resultado] = relationship(back_populates="revisiones")

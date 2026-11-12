@@ -1,0 +1,38 @@
+# Solo dependencias para desarrollo local. NO es el despliegue de ADR-016
+# (ese Compose, con las imágenes del backend, se construye aparte).
+# Puertos publicados únicamente en 127.0.0.1 (S-01). Credenciales desde .env (S-02).
+name: analizador-dev
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?definir en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?definir en .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?definir en .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?definir en .env}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672" # consola de administración, solo local
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
