@@ -1,0 +1,171 @@
+# Despliegue continuo del backend (rama main).
+#
+# Corre al fusionar un Pull Request en main (push a main) o a mano desde la pestaña Actions.
+# El código ya pasó la integración continua en develop (ci.yml).
+#   1. imagen ....... construye la imagen y la publica en GHCR (:<sha> y :latest).
+#   2. despliegue ... copia docker-compose.prod.yml y deploy/ a la EC2 por SSH, descarga la
+#                     imagen del commit, aplica migraciones, reinicia los contenedores y
+#                     verifica /health/ready.
+#
+# Secretos (Settings > Secrets and variables > Actions):
+#   EC2_HOST        IP elástica (o DNS público) de la EC2
+#   EC2_USUARIO     usuario SSH de la EC2 (ec2-user en Amazon Linux, ubuntu en Ubuntu)
+#   EC2_LLAVE_SSH   llave privada SSH (contenido completo del archivo .pem)
+# Variables opcionales:
+#   EC2_DIRECTORIO  carpeta del despliegue en la EC2 (por defecto: analizador)
+#   PLATAFORMA      arquitectura de la EC2: linux/amd64 (defecto) o linux/arm64 (Graviton)
+#   API_URL         URL pública de la API (https://api.ejemplo.com) para verificar desde fuera
+#
+# Los secretos de la aplicación NO pasan por GitHub: viven en el .env de la EC2.
+
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un despliegue a la vez; uno nuevo espera a que termine el anterior.
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+env:
+  COMPOSE: docker compose -f docker-compose.prod.yml
+
+jobs:
+  imagen:
+    name: Publicar imagen en GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      imagen: ${{ steps.nombre.outputs.imagen }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Nombre de la imagen (GHCR exige minúsculas)
+        id: nombre
+        run: echo "imagen=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v4
+        if: ${{ vars.PLATAFORMA == 'linux/arm64' }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ vars.PLATAFORMA || 'linux/amd64' }}
+          push: true
+          tags: |
+            ${{ steps.nombre.outputs.imagen }}:${{ github.sha }}
+            ${{ steps.nombre.outputs.imagen }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  despliegue:
+    name: Desplegar en AWS EC2
+    needs: imagen
+    runs-on: ubuntu-latest
+    environment: produccion
+    permissions:
+      contents: read
+      packages: read
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USUARIO: ${{ secrets.EC2_USUARIO }}
+      DIRECTORIO: ${{ vars.EC2_DIRECTORIO || 'analizador' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configurar SSH
+        env:
+          EC2_LLAVE_SSH: ${{ secrets.EC2_LLAVE_SSH }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$EC2_LLAVE_SSH" > ~/.ssh/ec2
+          chmod 600 ~/.ssh/ec2
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          cat >> ~/.ssh/config <<EOF
+          Host ec2
+            HostName $EC2_HOST
+            User $EC2_USUARIO
+            IdentityFile ~/.ssh/ec2
+            ServerAliveInterval 30
+          EOF
+
+      - name: Copiar docker-compose.prod.yml y deploy/
+        run: |
+          ssh ec2 "mkdir -p '$DIRECTORIO'"
+          scp -r docker-compose.prod.yml deploy "ec2:$DIRECTORIO/"
+
+      - name: Descargar la imagen y desplegar
+        env:
+          IMAGEN: ${{ needs.imagen.outputs.imagen }}
+          TAG: ${{ github.sha }}
+          GHCR_USUARIO: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # El token de GHCR viaja por la entrada estándar (no queda en la línea de comandos).
+          printf '%s' "$GHCR_TOKEN" | ssh ec2 "docker login ghcr.io -u '$GHCR_USUARIO' --password-stdin"
+          ssh ec2 bash -s -- "$DIRECTORIO" "$IMAGEN" "$TAG" "$COMPOSE" <<'EOF'
+          set -euo pipefail
+          cd "$1"
+          trap 'docker logout ghcr.io >/dev/null' EXIT
+          test -f .env || { echo "::error::Falta $1/.env en la EC2 (ver .env.prod.example)"; exit 1; }
+          # Tienen prioridad sobre los valores del .env.
+          export BACKEND_IMAGE="$2" BACKEND_TAG="$3"
+          COMPOSE="$4"
+          $COMPOSE pull --quiet
+          # "migrate" corre antes de api y worker (depends_on); si falla, no se reinicia nada más.
+          $COMPOSE up -d --no-build --remove-orphans --wait --wait-timeout 300
+          echo "Desplegado $BACKEND_IMAGE:$BACKEND_TAG"
+          docker image prune -f
+          EOF
+
+      - name: Verificar /health/ready en la EC2
+        run: |
+          ssh ec2 bash -s -- "$DIRECTORIO" "$COMPOSE" <<'EOF'
+          cd "$1"
+          for _ in $(seq 1 20); do
+            if $2 exec -T api python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5).read().decode())"; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::La API no respondió 200 en /health/ready"
+          $2 ps -a
+          $2 logs --no-color --tail 100 migrate api worker
+          exit 1
+          EOF
+
+      - name: Verificar la URL pública
+        if: ${{ vars.API_URL != '' }}
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          for _ in $(seq 1 20); do
+            if curl -fsS "${API_URL%/}/health"; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::${API_URL} no respondió 200 en /health"
+          exit 1
+
+      - name: Limpiar la llave SSH
+        if: always()
+        run: rm -f ~/.ssh/ec2

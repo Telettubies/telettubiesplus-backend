@@ -1,0 +1,71 @@
+"""Punto de entrada de la API de backend (C-02)."""
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from analizador.api.routers import conocimiento, health, licitaciones, miembros, resultados, yo
+from analizador.core.config import get_settings
+from analizador.core.logging import configure_logging
+from analizador.db.session import get_engine
+from analizador.messaging.publicador import Publicador
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    configure_logging(settings.log_level)
+    publicador = Publicador(settings.rabbitmq_url.get_secret_value())
+    await publicador.conectar()
+    app.state.publicador = publicador
+    try:
+        yield
+    finally:
+        await publicador.cerrar()
+        await get_engine().dispose()
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    app = FastAPI(
+        title="Analizador de pliegos",
+        version="0.1.0",
+        lifespan=lifespan,
+        # La documentación interactiva solo fuera de producción.
+        docs_url=None if settings.app_env == "production" else "/docs",
+        redoc_url=None,
+        openapi_url=None if settings.app_env == "production" else "/openapi.json",
+    )
+    # S-13: CORS limitado al dominio del frontend.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH", "DELETE"],
+        allow_headers=["Authorization", "Content-Type", "X-Organizacion-Id"],
+    )
+    for router in (
+        health.router,
+        yo.router,
+        miembros.router,
+        licitaciones.router,
+        resultados.router,
+        conocimiento.router,
+    ):
+        app.include_router(router)
+    return app
+
+
+def run() -> None:
+    settings = get_settings()
+    uvicorn.run(
+        "analizador.api.main:create_app",
+        factory=True,
+        host="0.0.0.0",  # noqa: S104  # dentro del contenedor; solo el proxy se publica (S-01)
+        port=8000,
+        reload=settings.app_env == "development",
+        proxy_headers=True,
+    )

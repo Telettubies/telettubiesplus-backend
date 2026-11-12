@@ -1,0 +1,25 @@
+# Secretos (S-06): nunca dentro de la imagen
+.env
+.env.*
+
+# Entorno y cachés locales
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# No necesarios en la imagen de producción
+.git/
+.github/
+.vscode/
+.idea/
+tests/
+deploy/
+docker-compose*.yml
+Dockerfile
+.dockerignore
+.pre-commit-config.yaml

@@ -1,0 +1,160 @@
+# Integración continua del backend (rama develop).
+#
+# Corre en cada Pull Request hacia develop:
+#   1. calidad ........ ruff (lint y formato) y mypy.
+#   2. pruebas ........ pytest (sin servicios externos; ver tests/conftest.py).
+#   3. migraciones .... alembic upgrade/check/downgrade contra PostgreSQL + pgvector:
+#                       detecta modelos ORM sin su migración y migraciones no reversibles.
+#   4. imagen-docker .. construye la imagen (no la publica) y levanta docker-compose.prod.yml
+#                       completo como prueba de humo (/health/ready a través de Caddy).
+#
+# No requiere secretos: las credenciales de las pruebas son desechables.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.13.7"
+
+jobs:
+  calidad:
+    name: Lint, formato y tipos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Instalar dependencias
+        run: uv sync --locked
+
+      - name: Linter (ruff)
+        run: uv run ruff check --output-format=github .
+
+      - name: Formato (ruff format)
+        run: uv run ruff format --check .
+
+      - name: Type checker (mypy)
+        run: uv run mypy
+
+  pruebas:
+    name: Pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Instalar dependencias
+        run: uv sync --locked
+
+      - name: Pytest
+        run: uv run pytest --junitxml=reporte-pruebas.xml
+
+      - name: Publicar reporte de pruebas
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: reporte-pruebas
+          path: reporte-pruebas.xml
+
+  migraciones:
+    name: Migraciones de Alembic
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.0-pg17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/ci
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Instalar dependencias
+        run: uv sync --locked --no-dev
+
+      - name: Aplicar migraciones
+        run: uv run alembic upgrade head
+
+      - name: Modelos y migraciones coinciden
+        run: uv run alembic check
+
+      - name: Migraciones reversibles
+        run: |
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+
+  imagen-docker:
+    name: Imagen Docker y prueba de humo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build de la imagen
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: analizador-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: .env de prueba (valores ficticios)
+        run: |
+          sed -e "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" \
+              -e "s/^RABBITMQ_PASSWORD=.*/RABBITMQ_PASSWORD=$(openssl rand -hex 16)/" \
+              -e 's/^API_DOMAIN=.*/API_DOMAIN=:80/' \
+              -e 's/^S3_BUCKET=.*/S3_BUCKET=ci/' \
+              -e 's#^SUPABASE_URL=.*#SUPABASE_URL=https://ci.supabase.co#' \
+              -e 's/^BACKEND_IMAGE=.*/BACKEND_IMAGE=analizador-backend/' \
+              -e 's/^BACKEND_TAG=.*/BACKEND_TAG=ci/' \
+              .env.prod.example > .env
+
+      - name: Levantar docker-compose.prod.yml
+        run: docker compose -f docker-compose.prod.yml up -d --no-build --wait --wait-timeout 180
+
+      - name: /health/ready a través del proxy
+        run: |
+          curl -fsS http://127.0.0.1/health
+          curl -fsS http://127.0.0.1/health/ready
+
+      - name: Logs de los contenedores
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml logs --no-color
+
+      - name: Bajar el stack
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
