@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Herramientas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secretos (S-06): nunca subir el .env real
+.env
+.env.*
+!.env.example
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
