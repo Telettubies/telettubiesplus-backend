@@ -113,6 +113,8 @@ class Settings(BaseSettings):
     # Similitud mínima (0 a 100) entre una cita y su fuente para darla por verificada.
     # Valor provisional (Q-14).
     citas_umbral_similitud: float = Field(default=90, ge=0, le=100)
+    # Confianza mínima de una evaluación automática (Q-14, valor de la demo).
+    revision_umbral_confianza: float = Field(default=0.70, ge=0, le=1)
 
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
