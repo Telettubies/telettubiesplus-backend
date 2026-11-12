@@ -11,7 +11,7 @@ from functools import wraps
 from typing import Any
 
 from analizador.models.enums import EstadoLicitacion
-from analizador.pipeline import catalogo, lectura, progreso
+from analizador.pipeline import catalogo, lectura, progreso, secciones
 from analizador.pipeline.estado import EstadoAnalisis
 
 Nodo = Callable[[EstadoAnalisis], Awaitable[dict[str, Any]]]
@@ -43,8 +43,8 @@ async def leer_pdf(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("division_secciones")
 async def dividir_secciones(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 2): separar en secciones con numeral y páginas, por reglas (ADR-012).
-    # Persistir en `secciones`.
+    # Etapa 2: secciones con numeral y páginas, por reglas (ADR-012, HU-B11).
+    await secciones.ejecutar(estado)
     return {}
 
 

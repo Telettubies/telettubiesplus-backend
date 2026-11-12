@@ -78,6 +78,9 @@ class Settings(BaseSettings):
     # Páginas por pliego que como máximo se envían al modelo con visión (RC-02).
     ocr_vision_max_paginas: int = Field(default=30, ge=0)
 
+    # Una sección más larga se parte en tramos de este tamaño para la extracción (HU-B11).
+    seccion_max_caracteres: int = Field(default=12000, ge=1000)
+
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
     # Tiempo máximo de un trabajo antes de darlo por fallido (S-09). Valor por confirmar.
