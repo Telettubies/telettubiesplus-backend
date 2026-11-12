@@ -59,7 +59,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 16 | HU-B15 | Localizar cada requisito en el PDF | hecha | sar | bc46c21, 2ff4a28 | #21 |
 | 17 | HU-B16 | Recuperar evidencia de la base de conocimiento | hecha | sar | 65f418a, bc2631e | #22 |
 | 18 | HU-B17 | Verificar el cumplimiento de cada ítem | hecha | sar | 073cac9, ee945fe | #23 |
-| 19 | HU-B18 | Validar que las citas existen en la fuente | pendiente | sar | | |
+| 19 | HU-B18 | Validar que las citas existen en la fuente | hecha | sar | ab07bd9, a17aa67 | #24 |
 | 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | pendiente | sar | | |
 | 21 | HU-B19 | Calcular brechas, recomendación y justificación | pendiente | sar | | |
 | 22 | HU-B21 | Entregar el resultado y el acceso al PDF | pendiente | sar | | |
