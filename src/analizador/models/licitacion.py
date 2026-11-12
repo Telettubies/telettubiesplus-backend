@@ -203,12 +203,18 @@ class Resultado(UUIDPk, Timestamps, Base):
     estado: Mapped[EstadoCumplimiento] = mapped_column(
         str_enum(EstadoCumplimiento, "estado_cumplimiento")
     )
-    # Citas de la base de conocimiento: [{"fragmento_id": .., "texto": ..}, ...] (RF-05, P-04).
+    # Soporte del estado (RF-05). Un dato estructurado: {"tipo": "dato", "fuente", "texto",
+    # "verificada": true}. Una cita del modelo: {"tipo": "cita", "fragmento_id", "fuente",
+    # "texto", "cita", "verificada"} (la validación de citas, P-04, fija `verificada`).
     evidencia: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     faltante: Mapped[str | None] = mapped_column(Text)
     # Q-14: umbrales sin decidir; se guarda el valor para poder aplicarlos después.
     confianza: Mapped[float | None] = mapped_column(Float)
     requiere_revision: Mapped[bool] = mapped_column(default=False)
+    # Por qué el ítem pasa a revisión humana (RF-07, HU-B20). Nulo si no la requiere.
+    motivo_revision: Mapped[str | None] = mapped_column(Text)
+    # Qué regla o modelo produjo el estado: deja trazable el porqué (N-01).
+    regla: Mapped[str | None] = mapped_column(String(500))
 
     item: Mapped[Item] = relationship(back_populates="resultado")
     revisiones: Mapped[list["Revision"]] = relationship(

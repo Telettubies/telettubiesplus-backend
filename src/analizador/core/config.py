@@ -102,6 +102,13 @@ class Settings(BaseSettings):
     # Reranker de NVIDIA (P-11, no aprobada): apagado salvo que se active aquí.
     rerank_activo: bool = False
 
+    # --- Verificación (HU-B17) ---
+    # Valor del SMMLV en pesos para convertir lo que el pliego exige en SMMLV (Q-12). Sin
+    # valor, los ítems que lo necesitan pasan a revisión.
+    smmlv_cop: int | None = Field(default=None, gt=0)
+    # Ítems que se envían a Claude a la vez en la verificación.
+    verificacion_concurrencia: int = Field(default=3, gt=0)
+
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True
     # Tiempo máximo de un trabajo antes de darlo por fallido (S-09). Valor por confirmar.
@@ -126,6 +133,7 @@ class Settings(BaseSettings):
         "nvidia_model_chat",
         "nvidia_model_rerank",
         "nvidia_rerank_url",
+        "smmlv_cop",
         "supabase_service_role_key",
         "anthropic_api_key",
         "nvidia_api_key",

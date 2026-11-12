@@ -20,6 +20,7 @@ from analizador.pipeline import (
     localizacion,
     progreso,
     secciones,
+    verificacion,
 )
 from analizador.pipeline.estado import EstadoAnalisis
 
@@ -96,8 +97,8 @@ async def recuperar_evidencia(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("verificacion")
 async def verificar(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 7): estado de cada ítem (RF-04). Numéricos por código [P-03];
-    # cualitativos con el modelo de Anthropic. Persistir `resultados`.
+    # Etapa 7: estado de cada ítem; numéricos por código, cualitativos con Claude (HU-B17).
+    await verificacion.ejecutar(estado)
     return {}
 
 
