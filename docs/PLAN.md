@@ -53,7 +53,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 10 | HU-B06 | Indexar los documentos de la empresa | hecha | sar | a98eff5, 4bd01d3 | #15 |
 | 11 | HU-B10 | Leer el texto del pliego, incluidas páginas escaneadas | hecha | sar | b5e06e2, bfb9b3e | #16 |
 | 12 | HU-B11 | Dividir el pliego en secciones con su numeral | hecha | sar | 2e7690a, 50bb6b5 | #17 |
-| 13 | HU-B12 | Filtrar secciones sin requisitos | pendiente | sar | | |
+| 13 | HU-B12 | Filtrar secciones sin requisitos | hecha | sar | 5505238, 7671c7c | #18 |
 | 14 | HU-B13 | Extraer y atomizar requisitos | pendiente | sar | | |
 | 15 | HU-B14 | Comprobar la cobertura del pliego | pendiente | sar | | |
 | 16 | HU-B15 | Localizar cada requisito en el PDF | pendiente | sar | | |
