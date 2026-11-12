@@ -60,7 +60,7 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 17 | HU-B16 | Recuperar evidencia de la base de conocimiento | hecha | sar | 65f418a, bc2631e | #22 |
 | 18 | HU-B17 | Verificar el cumplimiento de cada ítem | hecha | sar | 073cac9, ee945fe | #23 |
 | 19 | HU-B18 | Validar que las citas existen en la fuente | hecha | sar | ab07bd9, a17aa67 | #24 |
-| 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | pendiente | sar | | |
+| 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | hecha | laqg | 325aa93, f023046 | |
 | 21 | HU-B19 | Calcular brechas, recomendación y justificación | pendiente | sar | | |
 | 22 | HU-B21 | Entregar el resultado y el acceso al PDF | pendiente | sar | | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
@@ -106,6 +106,12 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
     caracteres por pregunta, 30 peticiones por minuto a NVIDIA con 5 reintentos, y 3 entregas y
     3600 s por trabajo de análisis. La cuota es una ventana móvil de 24 horas, no un día de
     calendario. Son cifras de partida, no decisiones del equipo: hay que confirmarlas.
+
+### Criterios confirmados para la demo
+
+- HU-B20 envía un ítem automático a revisión por requisito ambiguo, cita no verificada o
+  confianza menor que `REVISION_UMBRAL_CONFIANZA` (0,70 para la demo). Conserva el estado
+  propuesto y registra los motivos. Las revisiones humanas existentes se respetan.
 
 ## 6. Ambigüedades detectadas
 
