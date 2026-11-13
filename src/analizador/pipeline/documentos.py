@@ -172,9 +172,9 @@ async def procesar(trabajo: TrabajoProcesamiento) -> None:
     # cuando una carpeta produce varios trabajos simultaneos.
     async with get_sessionmaker()() as bloqueo:
         await bloqueo.execute(
-            select(func.pg_advisory_xact_lock(func.hashtextextended(
-                str(trabajo.organizacion_id), 1
-            )))
+            select(
+                func.pg_advisory_xact_lock(func.hashtextextended(str(trabajo.organizacion_id), 1))
+            )
         )
         async with get_sessionmaker()() as session:
             cambio = await session.scalar(
@@ -189,21 +189,28 @@ async def procesar(trabajo: TrabajoProcesamiento) -> None:
                 )
                 if documento is None or documento.estado != "revision" or not documento.candidatos:
                     return
-                fuentes = list(await session.scalars(
-                    select(FuenteConocimiento).where(
-                        FuenteConocimiento.organizacion_id == trabajo.organizacion_id,
-                        filtro_version(await version_activa(session, trabajo.organizacion_id)),
+                fuentes = list(
+                    await session.scalars(
+                        select(FuenteConocimiento).where(
+                            FuenteConocimiento.organizacion_id == trabajo.organizacion_id,
+                            filtro_version(await version_activa(session, trabajo.organizacion_id)),
+                        )
                     )
-                ))
+                )
                 grupos = {
-                    "empresa": "empresa", "financiero": "financiero",
-                    "contrato": "contratos", "hoja_de_vida": "personas",
-                    "certificacion": "certificaciones", "capacidad": "capacidades",
+                    "empresa": "empresa",
+                    "financiero": "financiero",
+                    "contrato": "contratos",
+                    "hoja_de_vida": "personas",
+                    "certificacion": "certificaciones",
+                    "capacidad": "capacidades",
                 }
                 base: dict[str, Any] = {"empresa": {}}
                 for fuente in fuentes:
                     grupo = grupos[fuente.tipo.value]
-                    limpio = {k: v for k, v in (fuente.datos or {}).items() if not k.startswith("_")}
+                    limpio = {
+                        k: v for k, v in (fuente.datos or {}).items() if not k.startswith("_")
+                    }
                     if grupo == "empresa":
                         base[grupo] = limpio
                     else:
@@ -215,8 +222,12 @@ async def procesar(trabajo: TrabajoProcesamiento) -> None:
                         base[grupo] = {**base[grupo], **datos}
                     else:
                         registros = base.setdefault(grupo, [])
-                        clave = next((k for k in ("id", "anio", "nombre") if datos.get(k) is not None), None)
-                        anterior = next((r for r in registros if clave and r.get(clave) == datos[clave]), None)
+                        clave = next(
+                            (k for k in ("id", "anio", "nombre") if datos.get(k) is not None), None
+                        )
+                        anterior = next(
+                            (r for r in registros if clave and r.get(clave) == datos[clave]), None
+                        )
                         if anterior is None:
                             registros.append(dict(datos))
                         else:
@@ -225,7 +236,9 @@ async def procesar(trabajo: TrabajoProcesamiento) -> None:
                     validada = BaseConocimiento.model_validate(base)
                 except ValidationError:
                     # No fabricar identidad, fechas o cifras para publicar un PDF parcial.
-                    logger.info("Documento %s requiere completar datos antes de indexar", documento.id)
+                    logger.info(
+                        "Documento %s requiere completar datos antes de indexar", documento.id
+                    )
                     return
                 cambio = CambioConocimiento(
                     organizacion_id=trabajo.organizacion_id,
