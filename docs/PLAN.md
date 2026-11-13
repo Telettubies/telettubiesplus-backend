@@ -65,9 +65,10 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 22 | HU-B21 | Entregar el resultado y el acceso al PDF | hecha; integración frontend pendiente | laqg | ee6f7fe, 8bf0dd2 | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
 | 24 | HU-B02 | Invitar un usuario a la organización | hecha | laqg | f91e973, 4b5e190 | |
+| 25 | HU-B03 | Gestionar miembros y roles | hecha | laqg | 9b4479a, 3f60c1b | |
 
-Fuera de este plan: HU-B03, B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Las Should y
-Could que se implementan se añaden a la tabla con su número de orden.
+Fuera de este plan: HU-B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Las Should y Could que
+se implementan se añaden a la tabla con su número de orden.
 
 Dependencias que fijan el orden: HU-B01 antes de todo lo protegido; T-01 antes de HU-B04 y
 HU-B07 (rutas y URL del almacenamiento); HU-B26 antes de las historias que llaman a NVIDIA;
