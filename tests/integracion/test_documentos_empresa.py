@@ -21,11 +21,13 @@ from tests.integracion.test_hu_b06_indexacion import EJEMPLO, _cargar, _procesar
 
 
 @pytest.mark.parametrize("escaneada", [False, True])
-async def test_pdf_extraccion_revision_aprobacion_indexacion_y_aislamiento(
+@pytest.mark.parametrize("completa", [False, True])
+async def test_pdf_indexacion_automatica_o_revision_y_aislamiento(
     cliente: httpx.AsyncClient,
     sesion: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
     escaneada: bool,
+    completa: bool,
 ) -> None:
     admin = await crear_organizacion(sesion)
     otra = await crear_organizacion(sesion, "Otra")
@@ -41,7 +43,14 @@ async def test_pdf_extraccion_revision_aprobacion_indexacion_y_aislamiento(
     async def extraer(**_kwargs: object) -> tuple[ExtraccionDocumento, anthropic_client.Uso]:
         return ExtraccionDocumento(
             candidatos=[
-                Candidato(tipo="empresa", pagina=1, cita=cita, datos_json=json.dumps(empresa))
+                Candidato(
+                    tipo="empresa",
+                    pagina=1,
+                    cita=cita,
+                    datos_json=json.dumps(
+                        empresa if completa else {"razon_social": empresa["razon_social"]}
+                    ),
+                )
             ]
         ), anthropic_client.Uso()
 
@@ -80,25 +89,34 @@ async def test_pdf_extraccion_revision_aprobacion_indexacion_y_aislamiento(
             )
         ).json()
     ]
-    assert docs[0]["estado"] == "revision"
+    assert docs[0]["estado"] == ("aprobado" if completa else "revision")
     assert docs[0]["paginas"][0]["origen"] == ("ocr" if escaneada else "digital")
     assert docs[0]["candidatos"][0]["pagina"] == 1
-    assert await sesion.scalar(select(FuenteConocimiento.id)) is None
+    fuente_id = await sesion.scalar(select(FuenteConocimiento.id))
+    if completa:
+        assert fuente_id is not None
+        cambio = await sesion.scalar(
+            select(CambioConocimiento).where(CambioConocimiento.trabajo_id == trabajo.id)
+        )
+        assert cambio is not None and cambio.estado == "activado"
+    else:
+        assert fuente_id is None
     assert (
         await cliente.get(
             f"/api/conocimiento/documentos/{documento_id}/pdf-url", headers=otra.cabeceras
         )
     ).status_code == 404
     assert (await cliente.get("/api/conocimiento/documentos", headers=otra.cabeceras)).json() == []
-    propuesta = {"base": {"empresa": empresa}, "procedencia": docs[0]["candidatos"]}
-    aprobacion = await cliente.post(
-        f"/api/conocimiento/documentos/{documento_id}/aprobar",
-        headers=admin.cabeceras,
-        json=propuesta,
-    )
-    assert aprobacion.status_code == 202, aprobacion.text
-    assert await sesion.scalar(select(FuenteConocimiento.id)) is None
-    await _procesar(uuid.UUID(aprobacion.json()["id"]))
+    if not completa:
+        propuesta = {"base": {"empresa": empresa}, "procedencia": docs[0]["candidatos"]}
+        aprobacion = await cliente.post(
+            f"/api/conocimiento/documentos/{documento_id}/aprobar",
+            headers=admin.cabeceras,
+            json=propuesta,
+        )
+        assert aprobacion.status_code == 202, aprobacion.text
+        assert await sesion.scalar(select(FuenteConocimiento.id)) is None
+        await _procesar(uuid.UUID(aprobacion.json()["id"]))
     resumen = (await cliente.get("/api/conocimiento", headers=admin.cabeceras)).json()
     assert resumen["cargada"] and resumen["fragmentos_indexados"] > 0
     docs = (await cliente.get("/api/conocimiento/documentos", headers=admin.cabeceras)).json()
