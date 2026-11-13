@@ -186,8 +186,8 @@ async def reintentar(
     identificador: uuid.UUID, contexto: AdminDep, session: SessionDep, publicador: PublicadorDep
 ) -> Any:
     documento = await obtener(session, contexto.organizacion_id, identificador, True)
-    if documento.estado != "fallido":
-        raise HTTPException(409, "Solo se puede reintentar un documento fallido")
+    if documento.estado not in {"fallido", "revision"}:
+        raise HTTPException(409, "Solo se puede reintentar un documento fallido o en revision")
     documento.estado = "en_cola"
     trabajo = TrabajoProcesamiento(
         organizacion_id=contexto.organizacion_id,
