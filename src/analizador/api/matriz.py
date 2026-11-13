@@ -9,7 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from analizador.contratos.decision import EstadoMatriz, Recomendacion
-from analizador.models import Item, Licitacion, PaginaPliego, Requisito, Resultado, Seccion
+from analizador.models import (
+    Item,
+    Licitacion,
+    Miembro,
+    PaginaPliego,
+    Requisito,
+    Resultado,
+    Revision,
+    Seccion,
+)
 from analizador.models.enums import PrecisionUbicacion, TipoRequisito
 from analizador.pipeline import cobertura, decision
 from analizador.schemas import (
@@ -58,7 +67,15 @@ def _ubicacion(requisito: Requisito, seccion: Seccion) -> UbicacionMatrizOut:
     )
 
 
-def _item(item: Item, requisito: Requisito, seccion: Seccion) -> ItemMatrizOut:
+def _revision(revision: Revision, autores: dict[uuid.UUID, str]) -> RevisionOut:
+    salida = RevisionOut.model_validate(revision)
+    salida.autor_email = autores.get(revision.usuario_id)
+    return salida
+
+
+def _item(
+    item: Item, requisito: Requisito, seccion: Seccion, autores: dict[uuid.UUID, str]
+) -> ItemMatrizOut:
     resultado = item.resultado
     estado = decision.estado_matriz(resultado)
     evidencias = [_evidencia(datos) for datos in resultado.evidencia] if resultado else []
@@ -83,20 +100,14 @@ def _item(item: Item, requisito: Requisito, seccion: Seccion) -> ItemMatrizOut:
         faltante=resultado.faltante if resultado else None,
         confianza=resultado.confianza if resultado else None,
         ubicacion=_ubicacion(requisito, seccion),
-        revisiones=[RevisionOut.model_validate(r) for r in resultado.revisiones]
-        if resultado
-        else [],
+        revisiones=[_revision(r, autores) for r in resultado.revisiones] if resultado else [],
     )
 
 
-async def construir(
-    session: AsyncSession,
-    licitacion: Licitacion,
-    organizacion_id: uuid.UUID,
-    recomendacion: Recomendacion,
-    justificacion: str,
-    url_pdf: str,
-) -> ResultadoMatrizOut:
+async def items_de(
+    session: AsyncSession, licitacion: Licitacion, organizacion_id: uuid.UUID
+) -> list[ItemMatrizOut]:
+    """Ítems de la matriz en el orden del pliego, solo de la organización (S-03)."""
     filas = await session.execute(
         select(Requisito, Seccion)
         .select_from(Requisito)
@@ -115,11 +126,30 @@ async def construir(
         )
         .order_by(Seccion.orden, Requisito.creado_en, Requisito.id)
     )
-    items = [
-        _item(item, requisito, seccion)
+    autores = {
+        usuario_id: email
+        for usuario_id, email in await session.execute(
+            select(Miembro.usuario_id, Miembro.email).where(
+                Miembro.organizacion_id == organizacion_id
+            )
+        )
+    }
+    return [
+        _item(item, requisito, seccion, autores)
         for requisito, seccion in filas
         for item in sorted(requisito.items, key=lambda item: (item.orden, item.id))
     ]
+
+
+async def construir(
+    session: AsyncSession,
+    licitacion: Licitacion,
+    organizacion_id: uuid.UUID,
+    recomendacion: Recomendacion,
+    justificacion: str,
+    url_pdf: str,
+) -> ResultadoMatrizOut:
+    items = await items_de(session, licitacion, organizacion_id)
     informe = await cobertura.calcular(session, licitacion.id)
     paginas = await session.scalar(
         select(func.max(PaginaPliego.numero)).where(PaginaPliego.licitacion_id == licitacion.id)

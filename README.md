@@ -134,8 +134,6 @@ src/analizador/
 
 ## Pendiente (stubs y TODO)
 
-- Etapas 9 y 10 del pipeline (`pipeline/etapas.py`): registran progreso pero aún no procesan.
-- Chat (RF-13) y observaciones (RF-15): responden 501.
 - Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
   exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
 
@@ -157,7 +155,8 @@ src/analizador/
 | Tamaño del PDF | `MAX_PDF_MB` | Al subir (413) |
 | Páginas del PDF | `MAX_PDF_PAGINAS` | En el worker, al leer el PDF |
 | Análisis por organización en 24 h | `CUOTA_ANALISIS_DIARIA` | Al subir (429); un PDF duplicado no cuenta |
-| Preguntas al chat por organización en 24 h | `CUOTA_CHAT_DIARIA`, `CHAT_MAX_CARACTERES` | En el chat (429 / 422) |
+| Preguntas al chat por organización en 24 h | `CUOTA_CHAT_DIARIA`, `CHAT_MAX_CARACTERES` | En el chat (429 / 422); solo cuentan las respondidas |
+| Borradores de observación por organización en 24 h | `CUOTA_OBSERVACIONES_DIARIA` | Al generar el borrador (429) |
 | Peticiones por minuto a NVIDIA | `NVIDIA_PETICIONES_POR_MINUTO`, `NVIDIA_MAX_REINTENTOS` | En cada llamada, con reintento y espera ante 429 |
 
 `GET /api/limites` devuelve los límites vigentes y el consumo de la organización. Los valores por

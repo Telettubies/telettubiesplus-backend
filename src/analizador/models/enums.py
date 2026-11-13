@@ -28,6 +28,14 @@ class Rol(StrEnum):
     REVISOR = "revisor"
 
 
+class AccionMiembro(StrEnum):
+    """Cambios de membresía que quedan auditados (HU-B02, HU-B03, S-05)."""
+
+    INVITACION = "invitacion"
+    CAMBIO_ROL = "cambio_rol"
+    RETIRO = "retiro"
+
+
 class TipoRequisito(StrEnum):
     """Taxonomía del reto (RF-01). Pendiente Q-16 / P-24."""
 
@@ -100,6 +108,7 @@ class TipoUso(StrEnum):
     """Acciones que cuentan para las cuotas por organización (S-08, HU-B26)."""
 
     PREGUNTA_CHAT = "pregunta_chat"
+    OBSERVACION = "observacion"
 
 
 class OrigenPagina(StrEnum):

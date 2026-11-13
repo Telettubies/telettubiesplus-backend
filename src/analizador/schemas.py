@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from analizador.contratos.decision import EstadoMatriz, Recomendacion
 from analizador.models.enums import (
@@ -36,6 +36,7 @@ class MiembroOut(_Orm):
     usuario_id: uuid.UUID
     email: str
     rol: Rol
+    invitacion_pendiente: bool
     creado_en: datetime
 
 
@@ -131,6 +132,8 @@ class UbicacionOut(_Orm):
 class RevisionOut(_Orm):
     id: uuid.UUID
     usuario_id: uuid.UUID
+    # Correo del miembro que revisó, si sigue en la organización (HU-B23, criterio 4).
+    autor_email: str | None = None
     estado_anterior: EstadoCumplimiento
     estado_nuevo: EstadoCumplimiento
     comentario: str
@@ -253,6 +256,15 @@ class RevisionIn(BaseModel):
     estado_nuevo: EstadoCumplimiento
     comentario: str = Field(min_length=1, max_length=4000)
 
+    @field_validator("comentario")
+    @classmethod
+    def _comentario_con_texto(cls, valor: str) -> str:
+        # HU-B23: el comentario es obligatorio; solo espacios no cuenta como comentario.
+        valor = valor.strip()
+        if not valor:
+            raise ValueError("El comentario es obligatorio")
+        return valor
+
 
 class RevisionCreada(BaseModel):
     revision: RevisionOut
@@ -313,3 +325,29 @@ class LimitesOut(BaseModel):
 
 class PreguntaIn(BaseModel):
     pregunta: str = Field(min_length=1)
+
+
+class CitaChatOut(BaseModel):
+    numeral: str
+    pagina: int | None
+
+
+class RespuestaChatOut(BaseModel):
+    """Respuesta del chat de una licitación (HU-B24). Texto plano: nunca se renderiza como HTML."""
+
+    respuesta: str
+    encontrado: bool
+    citas: list[CitaChatOut]
+
+
+class ObservacionIn(BaseModel):
+    requisito_id: uuid.UUID
+
+
+class ObservacionOut(BaseModel):
+    """Borrador de observación para la entidad (HU-B25). El sistema no lo envía."""
+
+    requisito_id: uuid.UUID
+    numeral: str
+    asunto: str
+    texto: str

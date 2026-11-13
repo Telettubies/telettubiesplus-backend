@@ -32,17 +32,23 @@ async def analisis_recientes(session: AsyncSession, organizacion_id: uuid.UUID) 
     return total or 0
 
 
-async def preguntas_recientes(session: AsyncSession, organizacion_id: uuid.UUID) -> int:
+async def eventos_recientes(
+    session: AsyncSession, organizacion_id: uuid.UUID, tipo: TipoUso
+) -> int:
     total = await session.scalar(
         select(func.count())
         .select_from(EventoUso)
         .where(
             EventoUso.organizacion_id == organizacion_id,
-            EventoUso.tipo == TipoUso.PREGUNTA_CHAT,
+            EventoUso.tipo == tipo,
             EventoUso.creado_en >= _desde(),
         )
     )
     return total or 0
+
+
+async def preguntas_recientes(session: AsyncSession, organizacion_id: uuid.UUID) -> int:
+    return await eventos_recientes(session, organizacion_id, TipoUso.PREGUNTA_CHAT)
 
 
 def _cuota_superada(mensaje: str) -> HTTPException:
@@ -64,4 +70,13 @@ async def verificar_cuota_chat(session: AsyncSession, organizacion_id: uuid.UUID
         raise _cuota_superada(
             f"Su organización alcanzó el límite de {cuota} preguntas al chat en 24 horas. "
             "Podrá preguntar de nuevo cuando pase ese plazo."
+        )
+
+
+async def verificar_cuota_observaciones(session: AsyncSession, organizacion_id: uuid.UUID) -> None:
+    cuota = get_settings().cuota_observaciones_diaria
+    if await eventos_recientes(session, organizacion_id, TipoUso.OBSERVACION) >= cuota:
+        raise _cuota_superada(
+            f"Su organización alcanzó el límite de {cuota} borradores de observación en "
+            "24 horas. Podrá generar otro cuando pase ese plazo."
         )

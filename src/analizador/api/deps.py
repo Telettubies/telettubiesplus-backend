@@ -91,6 +91,10 @@ async def contexto_actual(
             status.HTTP_400_BAD_REQUEST,
             "El usuario pertenece a varias organizaciones: indique X-Organizacion-Id",
         )
+    if miembro.invitacion_pendiente:
+        # La primera petición autenticada del invitado confirma que aceptó (HU-B03).
+        miembro.invitacion_pendiente = False
+        await session.commit()
     return Contexto(usuario=usuario, miembro=miembro)
 
 
