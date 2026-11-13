@@ -51,6 +51,7 @@ dev = [
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+extend-exclude = ["docs"]  # material de ejemplo (generadores de datos sintéticos), no es código de la app
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "N", "S", "ASYNC", "SIM", "RUF"]
