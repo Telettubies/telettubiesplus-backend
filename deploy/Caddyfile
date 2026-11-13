@@ -29,3 +29,25 @@
 		format console
 	}
 }
+
+# Frontend de produccion en su propio contenedor (C-12, DAS 6.5).
+# FRONTEND_DOMAIN=criterio.duckdns.org habilita el sitio; el fallback es local.
+# El Compose del frontend se conecta a la red interna del backend.
+{$FRONTEND_DOMAIN:http://frontend.localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	reverse_proxy frontend:8080
+
+	log {
+		output stdout
+		format console
+	}
+}

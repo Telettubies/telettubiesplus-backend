@@ -137,6 +137,8 @@ services:
     image: caddy:2.10-alpine
     environment:
       API_DOMAIN: ${API_DOMAIN:-:80}
+      # El frontend tiene su propio Compose en la red analizador_interna.
+      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-http://frontend.localhost}
       PROXY_MAX_BODY: ${PROXY_MAX_BODY:-50MB}
     ports:
       - "80:80"
