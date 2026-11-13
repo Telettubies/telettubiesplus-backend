@@ -11,6 +11,7 @@ from analizador.pipeline.verificacion_numerica import (
     DatosEmpresa,
     Registro,
     comparar,
+    limite_de_contratos,
     numero,
     prefijo_unspsc,
     verificar,
@@ -288,6 +289,82 @@ def test_sin_contratos_no_cumple() -> None:
 
     assert veredicto.estado == EstadoCumplimiento.NO_CUMPLE
     assert veredicto.faltante == "La base de conocimiento no tiene contratos ejecutados."
+
+
+# --- Selección de contratos: la base es el historial, no la oferta ---------------------------
+
+
+def test_un_tope_de_contratos_no_penaliza_tener_mas_en_la_base() -> None:
+    # «Máximo 2 contratos» y la empresa tiene 3: elige 2, no incumple.
+    veredicto = verificar(_item("experiencia_contratos", "<=", 2, "contratos"), EMPRESA)
+
+    assert veredicto.estado == EstadoCumplimiento.CUMPLE and not veredicto.requiere_revision
+    assert len(veredicto.evidencia) == 2
+    assert "2 contratos" in veredicto.regla and "3 disponibles" in veredicto.regla
+
+
+def test_un_tope_sin_ningun_contrato_pertinente_no_cumple() -> None:
+    veredicto = verificar(
+        _item("experiencia_contratos", "<=", 2, "contratos"),
+        EMPRESA,
+        codigos_del_requisito=["43230000"],
+    )
+
+    assert veredicto.estado == EstadoCumplimiento.NO_CUMPLE and veredicto.faltante
+
+
+def test_exactamente_n_contratos_cumple_si_la_empresa_tiene_al_menos_n() -> None:
+    veredicto = verificar(_item("experiencia_contratos", "==", 2, "contratos"), EMPRESA)
+
+    assert veredicto.estado == EstadoCumplimiento.CUMPLE
+    assert len(veredicto.evidencia) == 2
+
+
+def test_con_tope_el_valor_se_acredita_con_los_contratos_de_mayor_aporte() -> None:
+    # Sin filtro: C-1 aporta 1000, C-2 500 (50 %) y C-3 500. Con máximo 1, solo C-1.
+    veredicto = verificar(
+        _item("experiencia_valor", ">=", 1000, "smmlv"), EMPRESA, SMMLV, max_contratos=1
+    )
+
+    assert veredicto.estado == EstadoCumplimiento.CUMPLE
+    assert [d["texto"] for d in veredicto.evidencia] == [
+        "Contrato C-1: 1.000 SMMLV (participación 100 %)"
+    ]
+    assert "el pliego admite máximo 1" in veredicto.regla
+
+
+def test_con_tope_no_se_suman_contratos_que_no_se_pueden_presentar() -> None:
+    # Sumando los 3 se llega a 2000, pero con máximo 2 solo se acreditan 1500.
+    veredicto = verificar(
+        _item("experiencia_valor", ">=", 2000, "smmlv"), EMPRESA, SMMLV, max_contratos=2
+    )
+
+    assert veredicto.estado == EstadoCumplimiento.NO_CUMPLE
+    assert veredicto.faltante is not None and "1.500 SMMLV en 2 contratos" in veredicto.faltante
+
+
+@pytest.mark.parametrize(
+    ("parametros", "tope"),
+    [
+        ([], None),
+        ([_item("experiencia_contratos", ">=", 1, "contratos")], None),
+        ([_item("experiencia_contratos", "<=", 2, "contratos")], 2),
+        ([_item("experiencia_contratos", "<", 3, "contratos")], 2),
+        ([_item("experiencia_contratos", "==", 4, "contratos")], 4),
+        (
+            [
+                _item("experiencia_contratos", "<=", 3, "contratos"),
+                _item("experiencia_contratos", "<=", 2, "contratos"),
+                _item("experiencia_valor", ">=", 100, "smmlv"),
+            ],
+            2,
+        ),
+    ],
+)
+def test_limite_de_contratos_del_requisito(
+    parametros: list[dict[str, Any]], tope: int | None
+) -> None:
+    assert limite_de_contratos(parametros) == tope
 
 
 # --- Códigos UNSPSC -------------------------------------------------------------------------

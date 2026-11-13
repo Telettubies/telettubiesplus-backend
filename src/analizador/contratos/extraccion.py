@@ -11,7 +11,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from analizador.models.enums import TipoRequisito, TipoVerificacion
+from analizador.models.enums import TipoExigibilidad, TipoRequisito, TipoVerificacion
 
 __all__ = [
     "CampoComparable",
@@ -20,6 +20,7 @@ __all__ = [
     "Operador",
     "ParametrosNumericos",
     "RequisitoExtraido",
+    "TipoExigibilidad",
     "TipoVerificacion",
     "Unidad",
 ]
@@ -80,6 +81,12 @@ class ParametrosNumericos(BaseModel):
 class ItemExtraido(BaseModel):
     descripcion: str = Field(
         description="Una sola condición verificable, redactada de forma que se entienda sola."
+    )
+    # Sin valor se evalúa como antes: contra la base (la opción que no oculta incumplimientos).
+    tipo_exigibilidad: TipoExigibilidad = Field(
+        default=TipoExigibilidad.HISTORICO_EMPRESA,
+        description="Momento en que se exige: solo historico_empresa se verifica contra la "
+        "base de conocimiento de la empresa.",
     )
     tipo_verificacion: TipoVerificacion
     parametros: ParametrosNumericos | None = Field(

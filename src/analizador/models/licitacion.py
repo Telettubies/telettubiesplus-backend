@@ -31,6 +31,7 @@ from analizador.models.enums import (
     EstadoLicitacion,
     OrigenPagina,
     PrecisionUbicacion,
+    TipoExigibilidad,
     TipoRequisito,
     TipoVerificacion,
     str_enum,
@@ -176,6 +177,12 @@ class Item(UUIDPk, Timestamps, Base):
         str_enum(TipoVerificacion, "tipo_verificacion"),
         default=TipoVerificacion.CUALITATIVO,
         server_default=TipoVerificacion.CUALITATIVO.value,
+    )
+    # Solo los históricos se verifican contra la base; el resto va a la lista de chequeo.
+    exigibilidad: Mapped[TipoExigibilidad] = mapped_column(
+        str_enum(TipoExigibilidad, "tipo_exigibilidad"),
+        default=TipoExigibilidad.HISTORICO_EMPRESA,
+        server_default=TipoExigibilidad.HISTORICO_EMPRESA.value,
     )
     # Para ítems numéricos: {"campo", "operador", "valor", "valor_texto", "unidad"}.
     parametros: Mapped[dict[str, Any] | None] = mapped_column(JSONB)

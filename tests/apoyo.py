@@ -321,6 +321,14 @@ class EmbeddingsFalsos:
         monkeypatch.setattr(nvidia, "embeddings", self)
 
 
+def texto_del_mensaje(llamada: dict[str, Any]) -> str:
+    """Texto del primer mensaje, sea una cadena o una lista de bloques de texto."""
+    contenido = llamada["messages"][0]["content"]
+    if isinstance(contenido, str):
+        return contenido
+    return "\n".join(bloque.get("text", "") for bloque in contenido)
+
+
 @dataclass
 class ExtractorFalso:
     """Sustituye a `anthropic_client.generar_estructurado`.
@@ -342,7 +350,7 @@ class ExtractorFalso:
         self.maximo_simultaneo = max(self.maximo_simultaneo, self.en_curso)
         try:
             await asyncio.sleep(0.01)  # cede el control: así se ve la concurrencia real
-            contenido = kwargs["messages"][0]["content"]
+            contenido = texto_del_mensaje(kwargs)
             for fragmento, cola in self.respuestas.items():
                 if fragmento in contenido:
                     respuesta = cola.pop(0) if len(cola) > 1 else cola[0]
@@ -356,4 +364,4 @@ class ExtractorFalso:
             self.en_curso -= 1
 
     def enviadas(self, fragmento: str) -> int:
-        return sum(1 for llamada in self.llamadas if fragmento in llamada["messages"][0]["content"])
+        return sum(1 for llamada in self.llamadas if fragmento in texto_del_mensaje(llamada))
