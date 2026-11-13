@@ -830,6 +830,59 @@
         "title": "InvitacionIn",
         "type": "object"
       },
+      "ItemChequeoOut": {
+        "description": "Condición que no se verifica contra la base de conocimiento: un documento de la oferta,\nun compromiso de ejecución o un hito del cronograma. Va a la lista de chequeo operativa.",
+        "properties": {
+          "categoria": {
+            "$ref": "#/components/schemas/TipoRequisito"
+          },
+          "descripcion_item": {
+            "title": "Descripcion Item",
+            "type": "string"
+          },
+          "exigibilidad": {
+            "$ref": "#/components/schemas/TipoExigibilidad"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nota": {
+            "title": "Nota",
+            "type": "string"
+          },
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          },
+          "texto_requisito_literal": {
+            "title": "Texto Requisito Literal",
+            "type": "string"
+          },
+          "ubicacion": {
+            "$ref": "#/components/schemas/UbicacionMatrizOut"
+          }
+        },
+        "required": [
+          "id",
+          "requisito_id",
+          "numeral",
+          "categoria",
+          "exigibilidad",
+          "texto_requisito_literal",
+          "descripcion_item",
+          "nota",
+          "ubicacion"
+        ],
+        "title": "ItemChequeoOut",
+        "type": "object"
+      },
       "ItemMatrizOut": {
         "properties": {
           "categoria": {
@@ -1765,6 +1818,14 @@
             "title": "Licitacion Id",
             "type": "string"
           },
+          "lista_chequeo": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ItemChequeoOut"
+            },
+            "title": "Lista Chequeo",
+            "type": "array"
+          },
           "nombre": {
             "title": "Nombre",
             "type": "string"
@@ -2075,6 +2136,17 @@
         ],
         "title": "SeccionesProgreso",
         "type": "object"
+      },
+      "TipoExigibilidad": {
+        "description": "Momento en que el pliego exige la condición: decide si se verifica contra la base.\n\nSolo `historico_empresa` se puede acreditar con la base de conocimiento (lo que la empresa\nya es o ya hizo). Las demás no dependen del pasado de la empresa: pasan a la lista de\nchequeo operativa en vez de evaluarse como cumplimiento.",
+        "enum": [
+          "historico_empresa",
+          "documento_oferta",
+          "compromiso_ejecucion",
+          "hito_cronograma"
+        ],
+        "title": "TipoExigibilidad",
+        "type": "string"
       },
       "TipoFuenteConocimiento": {
         "description": "Tipos de fuente de la base de conocimiento (sección 6.3).\n\n`empresa` no está en el DAS: guarda los datos generales del oferente (razón social, NIT).",

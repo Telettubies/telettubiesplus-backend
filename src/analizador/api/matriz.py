@@ -19,11 +19,12 @@ from analizador.models import (
     Revision,
     Seccion,
 )
-from analizador.models.enums import PrecisionUbicacion, TipoRequisito
+from analizador.models.enums import PrecisionUbicacion, TipoExigibilidad, TipoRequisito
 from analizador.pipeline import cobertura, decision
 from analizador.schemas import (
     CoberturaMatrizOut,
     EvidenciaMatrizOut,
+    ItemChequeoOut,
     ItemMatrizOut,
     ResultadoMatrizOut,
     RevisionOut,
@@ -104,10 +105,36 @@ def _item(
     )
 
 
-async def items_de(
+NOTAS_CHEQUEO = {
+    TipoExigibilidad.DOCUMENTO_OFERTA: "Documento que se prepara con la oferta: inclúyalo en "
+    "la lista de documentos a aportar.",
+    TipoExigibilidad.COMPROMISO_EJECUCION: "Obligación de la ejecución del contrato: se asume "
+    "con la carta de presentación de la oferta.",
+    TipoExigibilidad.HITO_CRONOGRAMA: "Fecha o actuación del cronograma del proceso: agéndela.",
+}
+
+
+def _chequeo(item: Item, requisito: Requisito, seccion: Seccion) -> ItemChequeoOut:
+    return ItemChequeoOut(
+        id=item.id,
+        requisito_id=requisito.id,
+        numeral=requisito.numeral or seccion.numeral or "s/n",
+        categoria=requisito.tipo,
+        exigibilidad=item.exigibilidad,
+        texto_requisito_literal=requisito.texto_literal,
+        descripcion_item=item.descripcion,
+        nota=NOTAS_CHEQUEO.get(item.exigibilidad, ""),
+        ubicacion=_ubicacion(requisito, seccion),
+    )
+
+
+def _es_historico(item: Item) -> bool:
+    return item.exigibilidad == TipoExigibilidad.HISTORICO_EMPRESA
+
+
+async def _requisitos(
     session: AsyncSession, licitacion: Licitacion, organizacion_id: uuid.UUID
-) -> list[ItemMatrizOut]:
-    """Ítems de la matriz en el orden del pliego, solo de la organización (S-03)."""
+) -> list[tuple[Requisito, Seccion]]:
     filas = await session.execute(
         select(Requisito, Seccion)
         .select_from(Requisito)
@@ -126,6 +153,22 @@ async def items_de(
         )
         .order_by(Seccion.orden, Requisito.creado_en, Requisito.id)
     )
+    return [(requisito, seccion) for requisito, seccion in filas]
+
+
+def _ordenados(requisito: Requisito) -> list[Item]:
+    return sorted(requisito.items, key=lambda item: (item.orden, item.id))
+
+
+async def items_de(
+    session: AsyncSession, licitacion: Licitacion, organizacion_id: uuid.UUID
+) -> list[ItemMatrizOut]:
+    """Ítems de la matriz en el orden del pliego, solo de la organización (S-03).
+
+    Solo los que se verifican contra la base de conocimiento; el resto está en
+    `lista_chequeo_de`.
+    """
+    filas = await _requisitos(session, licitacion, organizacion_id)
     autores = {
         usuario_id: email
         for usuario_id, email in await session.execute(
@@ -137,7 +180,20 @@ async def items_de(
     return [
         _item(item, requisito, seccion, autores)
         for requisito, seccion in filas
-        for item in sorted(requisito.items, key=lambda item: (item.orden, item.id))
+        for item in _ordenados(requisito)
+        if _es_historico(item)
+    ]
+
+
+async def lista_chequeo_de(
+    session: AsyncSession, licitacion: Licitacion, organizacion_id: uuid.UUID
+) -> list[ItemChequeoOut]:
+    """Condiciones operativas del pliego, en su orden: no se evalúan contra la empresa."""
+    return [
+        _chequeo(item, requisito, seccion)
+        for requisito, seccion in await _requisitos(session, licitacion, organizacion_id)
+        for item in _ordenados(requisito)
+        if not _es_historico(item)
     ]
 
 
@@ -181,6 +237,7 @@ async def construir(
             for categoria, conteo in categorias.items()
         },
         items=items,
+        lista_chequeo=await lista_chequeo_de(session, licitacion, organizacion_id),
         brechas=sorted(
             (item for item in items if decision.es_brecha(item.estado)),
             key=lambda item: item.categoria != TipoRequisito.HABILITANTE,

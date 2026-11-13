@@ -17,6 +17,7 @@ from analizador.models.enums import (
     EstadoTrabajo,
     PrecisionUbicacion,
     Rol,
+    TipoExigibilidad,
     TipoFuenteConocimiento,
     TipoRequisito,
     TipoTrabajo,
@@ -240,6 +241,21 @@ class ItemMatrizOut(BaseModel):
     revisiones: list[RevisionOut]
 
 
+class ItemChequeoOut(BaseModel):
+    """Condición que no se verifica contra la base de conocimiento: un documento de la oferta,
+    un compromiso de ejecución o un hito del cronograma. Va a la lista de chequeo operativa."""
+
+    id: uuid.UUID
+    requisito_id: uuid.UUID
+    numeral: str
+    categoria: TipoRequisito
+    exigibilidad: TipoExigibilidad
+    texto_requisito_literal: str
+    descripcion_item: str
+    nota: str
+    ubicacion: UbicacionMatrizOut
+
+
 class CoberturaMatrizOut(BaseModel):
     secciones_procesadas: int
     secciones_total: int
@@ -260,6 +276,8 @@ class ResultadoMatrizOut(BaseModel):
     categorias: dict[TipoRequisito, dict[EstadoMatriz, int]]
     items: list[ItemMatrizOut]
     brechas: list[ItemMatrizOut]
+    # Lo que no se evalúa contra la empresa; no cuenta en el resumen ni en la recomendación.
+    lista_chequeo: list[ItemChequeoOut] = []
 
 
 class ErrorResultadoOut(BaseModel):

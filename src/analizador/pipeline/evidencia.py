@@ -23,7 +23,7 @@ from analizador.db.conocimiento import fijar_version, filtro_version
 from analizador.db.session import get_sessionmaker
 from analizador.integrations import nvidia
 from analizador.models import Fragmento, FuenteConocimiento, Item, Requisito
-from analizador.models.enums import OrigenFragmento, TipoVerificacion
+from analizador.models.enums import OrigenFragmento, TipoExigibilidad, TipoVerificacion
 from analizador.pipeline import progreso
 from analizador.pipeline.errores import AnalisisError
 from analizador.pipeline.estado import EstadoAnalisis
@@ -44,6 +44,8 @@ def _cualitativos(licitacion_id: uuid.UUID) -> Any:
         .where(
             Requisito.licitacion_id == licitacion_id,
             Item.tipo_verificacion == TipoVerificacion.CUALITATIVO,
+            # Lo que no es historial de la empresa va a la lista de chequeo: no se busca.
+            Item.exigibilidad == TipoExigibilidad.HISTORICO_EMPRESA,
         )
     )
 
