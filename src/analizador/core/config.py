@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     # Cuotas por organización en 24 horas móviles.
     cuota_analisis_diaria: int = Field(default=20, gt=0)
     cuota_chat_diaria: int = Field(default=200, gt=0)
+    # Borradores de observación con Claude por organización y 24 horas (HU-B25, S-08).
+    cuota_observaciones_diaria: int = Field(default=30, gt=0)
     chat_max_caracteres: int = Field(default=2000, gt=0)
     # Fragmentos del pliego que recibe el chat como contexto (HU-B24).
     chat_fragmentos: int = Field(default=6, gt=0, le=30)

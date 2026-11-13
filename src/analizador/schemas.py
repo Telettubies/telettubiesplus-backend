@@ -338,3 +338,16 @@ class RespuestaChatOut(BaseModel):
     respuesta: str
     encontrado: bool
     citas: list[CitaChatOut]
+
+
+class ObservacionIn(BaseModel):
+    requisito_id: uuid.UUID
+
+
+class ObservacionOut(BaseModel):
+    """Borrador de observación para la entidad (HU-B25). El sistema no lo envía."""
+
+    requisito_id: uuid.UUID
+    numeral: str
+    asunto: str
+    texto: str

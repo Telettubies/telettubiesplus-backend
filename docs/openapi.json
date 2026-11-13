@@ -723,6 +723,50 @@
         "title": "MiembroOut",
         "type": "object"
       },
+      "ObservacionIn": {
+        "properties": {
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requisito_id"
+        ],
+        "title": "ObservacionIn",
+        "type": "object"
+      },
+      "ObservacionOut": {
+        "description": "Borrador de observación para la entidad (HU-B25). El sistema no lo envía.",
+        "properties": {
+          "asunto": {
+            "title": "Asunto",
+            "type": "string"
+          },
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          },
+          "texto": {
+            "title": "Texto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requisito_id",
+          "numeral",
+          "asunto",
+          "texto"
+        ],
+        "title": "ObservacionOut",
+        "type": "object"
+      },
       "PrecisionUbicacion": {
         "description": "Precisión de la ubicación del requisito en el PDF (RF-26, P-21).",
         "enum": [
@@ -2193,6 +2237,7 @@
     },
     "/api/licitaciones/{licitacion_id}/observaciones": {
       "post": {
+        "description": "Borrador de observación para un requisito ambiguo; no se envía a la entidad (HU-B25).",
         "operationId": "observaciones_api_licitaciones__licitacion_id__observaciones_post",
         "parameters": [
           {
@@ -2223,7 +2268,27 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservacionIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservacionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2233,14 +2298,6 @@
               }
             },
             "description": "Validation Error"
-          },
-          "501": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
           }
         },
         "security": [

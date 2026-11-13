@@ -108,6 +108,7 @@ class TipoUso(StrEnum):
     """Acciones que cuentan para las cuotas por organización (S-08, HU-B26)."""
 
     PREGUNTA_CHAT = "pregunta_chat"
+    OBSERVACION = "observacion"
 
 
 class OrigenPagina(StrEnum):

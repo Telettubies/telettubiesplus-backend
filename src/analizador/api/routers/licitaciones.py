@@ -5,8 +5,10 @@ import logging
 import uuid
 from typing import Annotated, Literal
 
+import anthropic
 from fastapi import APIRouter, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,11 +16,15 @@ from sqlalchemy.orm import selectinload
 
 from analizador.api import chat as chat_licitacion
 from analizador.api import cuotas, matriz
+from analizador.api import observaciones as borradores
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
 from analizador.contratos.decision import Recomendacion
 from analizador.core.config import get_settings
 from analizador.integrations import almacenamiento, nvidia
-from analizador.integrations.anthropic_client import ModeloNoConfiguradoError
+from analizador.integrations.anthropic_client import (
+    ModeloNoConfiguradoError,
+    RespuestaRechazadaError,
+)
 from analizador.models import (
     EventoUso,
     Item,
@@ -36,6 +42,8 @@ from analizador.schemas import (
     LicitacionCreada,
     LicitacionDetalle,
     LicitacionResumen,
+    ObservacionIn,
+    ObservacionOut,
     PreguntaIn,
     ProgresoOut,
     RequisitoOut,
@@ -505,10 +513,46 @@ async def chat(
     return respuesta
 
 
-@router.post("/{licitacion_id}/observaciones", status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@router.post("/{licitacion_id}/observaciones", response_model=ObservacionOut)
 async def observaciones(
-    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep
-) -> None:
-    # TODO(RF-15, F-07): borrador de observaciones a partir de requisitos ambiguos (Anthropic).
-    await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "Observaciones no implementadas")
+    licitacion_id: uuid.UUID, datos: ObservacionIn, contexto: ContextoDep, session: SessionDep
+) -> ObservacionOut:
+    """Borrador de observación para un requisito ambiguo; no se envía a la entidad (HU-B25)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    fila = (
+        await session.execute(
+            select(Requisito, Seccion)
+            .join(Seccion, Requisito.seccion_id == Seccion.id)
+            .where(Requisito.id == datos.requisito_id, Requisito.licitacion_id == licitacion.id)
+        )
+    ).first()
+    if fila is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Requisito no encontrado")
+    requisito, seccion = fila
+    if not requisito.ambiguo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Solo se generan observaciones para requisitos marcados como ambiguos.",
+        )
+    await cuotas.verificar_cuota_observaciones(session, contexto.organizacion_id)
+    try:
+        borrador = await borradores.generar(licitacion, requisito, seccion)
+    except (ModeloNoConfiguradoError, anthropic.APIError) as exc:
+        logger.warning("Borrador de observación no disponible para %s", requisito.id)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "La generación de observaciones no está disponible. Intente de nuevo más tarde.",
+        ) from exc
+    except (RespuestaRechazadaError, ValidationError) as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "No se pudo generar el borrador. Intente de nuevo."
+        ) from exc
+    session.add(
+        EventoUso(
+            organizacion_id=contexto.organizacion_id,
+            tipo=TipoUso.OBSERVACION,
+            usuario_id=contexto.usuario.usuario_id,
+        )
+    )
+    await session.commit()
+    return borrador

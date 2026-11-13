@@ -41,7 +41,9 @@ PDF = b"%PDF-1.7\n% pliego de prueba\n"
 CUERPOS: dict[tuple[str, str], dict[str, Any] | None] = {
     ("post", "/api/licitaciones/{licitacion_id}/reintentar"): None,
     ("post", "/api/licitaciones/{licitacion_id}/chat"): {"pregunta": "¿Qué exige el pliego?"},
-    ("post", "/api/licitaciones/{licitacion_id}/observaciones"): None,
+    ("post", "/api/licitaciones/{licitacion_id}/observaciones"): {
+        "requisito_id": "00000000-0000-0000-0000-000000000000"
+    },
     ("post", "/api/resultados/{resultado_id}/revisiones"): {
         "estado_nuevo": "cumple",
         "comentario": "intento desde otra organización",
