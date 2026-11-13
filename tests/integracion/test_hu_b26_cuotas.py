@@ -130,8 +130,8 @@ async def test_al_superar_la_cuota_del_chat_responde_429(
 ) -> None:
     matriz = await sembrar_matriz(sesion, revisor, "ALFA")
     await _registrar_preguntas(sesion, revisor, 2)
-    # Con dos de tres todavía pasa la cuota (el chat en sí es de HU-B24: responde 501).
-    assert (await _preguntar(cliente, revisor, matriz.licitacion_id, "¿Plazo?")).status_code == 501
+    # Con dos de tres todavía pasa la cuota: sin pliego indexado el chat responde 409, no 429.
+    assert (await _preguntar(cliente, revisor, matriz.licitacion_id, "¿Plazo?")).status_code == 409
 
     await _registrar_preguntas(sesion, revisor, 1)
     respuesta = await _preguntar(cliente, revisor, matriz.licitacion_id, "¿Plazo?")
@@ -149,7 +149,7 @@ async def test_la_cuota_del_chat_es_por_organizacion(
 
     respuesta = await _preguntar(cliente, otra, matriz_otra.licitacion_id, "¿Plazo?")
 
-    assert respuesta.status_code == 501  # no la frena la cuota agotada de la otra
+    assert respuesta.status_code == 409  # no la frena la cuota agotada de la otra
 
 
 async def test_una_pregunta_demasiado_larga_se_rechaza_indicando_el_limite(

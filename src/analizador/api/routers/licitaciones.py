@@ -12,12 +12,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from analizador.api import chat as chat_licitacion
 from analizador.api import cuotas, matriz
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
 from analizador.contratos.decision import Recomendacion
 from analizador.core.config import get_settings
-from analizador.integrations import almacenamiento
+from analizador.integrations import almacenamiento, nvidia
+from analizador.integrations.anthropic_client import ModeloNoConfiguradoError
 from analizador.models import (
+    EventoUso,
     Item,
     Licitacion,
     Requisito,
@@ -25,7 +28,7 @@ from analizador.models import (
     Seccion,
     TrabajoProcesamiento,
 )
-from analizador.models.enums import EstadoLicitacion, EstadoTrabajo, TipoTrabajo
+from analizador.models.enums import EstadoLicitacion, EstadoTrabajo, TipoTrabajo, TipoUso
 from analizador.pipeline import catalogo
 from analizador.schemas import (
     ErrorResultadoOut,
@@ -36,6 +39,7 @@ from analizador.schemas import (
     PreguntaIn,
     ProgresoOut,
     RequisitoOut,
+    RespuestaChatOut,
     ResultadoMatrizOut,
     SeccionesProgreso,
     TrabajoOut,
@@ -456,12 +460,12 @@ async def reintentar(
     return trabajo
 
 
-@router.post("/{licitacion_id}/chat", status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@router.post("/{licitacion_id}/chat", response_model=RespuestaChatOut)
 async def chat(
     licitacion_id: uuid.UUID, datos: PreguntaIn, contexto: ContextoDep, session: SessionDep
-) -> None:
-    """Chat de la licitación (RF-13). La respuesta es de HU-B24; los límites ya se aplican."""
-    await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+) -> RespuestaChatOut:
+    """Responde una pregunta sobre el pliego y su resultado, citando numerales (HU-B24)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
     maximo = get_settings().chat_max_caracteres
     if len(datos.pregunta) > maximo:
         raise HTTPException(
@@ -469,9 +473,36 @@ async def chat(
             f"La pregunta supera el máximo de {maximo} caracteres.",
         )
     await cuotas.verificar_cuota_chat(session, contexto.organizacion_id)
-    # TODO(HU-B24): responder con NVIDIA + db.busqueda.fragmentos_cercanos (organización y
-    # licitación) y registrar un EventoUso de tipo PREGUNTA_CHAT por cada pregunta respondida.
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "Chat no implementado")
+    try:
+        respuesta = await chat_licitacion.responder(
+            session, licitacion, contexto.organizacion_id, datos.pregunta
+        )
+    except chat_licitacion.ChatNoDisponibleError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El chat de esta licitación estará disponible cuando termine su análisis.",
+        ) from exc
+    except (nvidia.NvidiaNoDisponibleError, ModeloNoConfiguradoError) as exc:
+        logger.warning("Chat no disponible para la licitación %s", licitacion.id)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "El chat no está disponible en este momento. Intente de nuevo en unos minutos.",
+        ) from exc
+    except chat_licitacion.RespuestaInvalidaError as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "No se pudo generar una respuesta con citas verificables. Reformule la pregunta.",
+        ) from exc
+    # Solo cuenta para la cuota una pregunta respondida (HU-B26).
+    session.add(
+        EventoUso(
+            organizacion_id=contexto.organizacion_id,
+            tipo=TipoUso.PREGUNTA_CHAT,
+            usuario_id=contexto.usuario.usuario_id,
+        )
+    )
+    await session.commit()
+    return respuesta
 
 
 @router.post("/{licitacion_id}/observaciones", status_code=status.HTTP_501_NOT_IMPLEMENTED)

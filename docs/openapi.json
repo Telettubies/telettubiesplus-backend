@@ -55,6 +55,31 @@
         "title": "CambioRolIn",
         "type": "object"
       },
+      "CitaChatOut": {
+        "properties": {
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "pagina": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagina"
+          }
+        },
+        "required": [
+          "numeral",
+          "pagina"
+        ],
+        "title": "CitaChatOut",
+        "type": "object"
+      },
       "CoberturaMatrizOut": {
         "properties": {
           "numerales_no_procesados": {
@@ -915,6 +940,33 @@
           "items"
         ],
         "title": "RequisitoOut",
+        "type": "object"
+      },
+      "RespuestaChatOut": {
+        "description": "Respuesta del chat de una licitación (HU-B24). Texto plano: nunca se renderiza como HTML.",
+        "properties": {
+          "citas": {
+            "items": {
+              "$ref": "#/components/schemas/CitaChatOut"
+            },
+            "title": "Citas",
+            "type": "array"
+          },
+          "encontrado": {
+            "title": "Encontrado",
+            "type": "boolean"
+          },
+          "respuesta": {
+            "title": "Respuesta",
+            "type": "string"
+          }
+        },
+        "required": [
+          "respuesta",
+          "encontrado",
+          "citas"
+        ],
+        "title": "RespuestaChatOut",
         "type": "object"
       },
       "ResultadoMatrizOut": {
@@ -2065,7 +2117,7 @@
     },
     "/api/licitaciones/{licitacion_id}/chat": {
       "post": {
-        "description": "Chat de la licitación (RF-13). La respuesta es de HU-B24; los límites ya se aplican.",
+        "description": "Responde una pregunta sobre el pliego y su resultado, citando numerales (HU-B24).",
         "operationId": "chat_api_licitaciones__licitacion_id__chat_post",
         "parameters": [
           {
@@ -2107,6 +2159,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2116,14 +2178,6 @@
               }
             },
             "description": "Validation Error"
-          },
-          "501": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
           }
         },
         "security": [

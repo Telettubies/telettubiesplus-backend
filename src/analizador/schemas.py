@@ -325,3 +325,16 @@ class LimitesOut(BaseModel):
 
 class PreguntaIn(BaseModel):
     pregunta: str = Field(min_length=1)
+
+
+class CitaChatOut(BaseModel):
+    numeral: str
+    pagina: int | None
+
+
+class RespuestaChatOut(BaseModel):
+    """Respuesta del chat de una licitación (HU-B24). Texto plano: nunca se renderiza como HTML."""
+
+    respuesta: str
+    encontrado: bool
+    citas: list[CitaChatOut]
