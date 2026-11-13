@@ -122,6 +122,13 @@ class Settings(BaseSettings):
     smmlv_cop: int | None = Field(default=None, gt=0)
     # Ítems que se envían a Claude a la vez en la verificación.
     verificacion_concurrencia: int = Field(default=3, gt=0)
+    # Tamaño máximo (en caracteres) de la base de conocimiento para enviarla completa al
+    # evaluador, agrupada por entidad, en vez de solo los fragmentos recuperados. Una base del
+    # tamaño de un JSON de empresa cabe entera; si es mayor, se usan los recuperados. 0 la
+    # desactiva.
+    verificacion_perfil_max_caracteres: int = Field(default=120_000, ge=0)
+    # Texto del pliego (sección del requisito y numerales que cita) que acompaña a cada ítem.
+    verificacion_contexto_pliego_max_caracteres: int = Field(default=8_000, ge=0)
 
     # --- Validación de citas y revisión (HU-B18, HU-B20) ---
     # Similitud mínima (0 a 100) entre una cita y su fuente para darla por verificada.
