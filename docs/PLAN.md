@@ -70,9 +70,10 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 27 | HU-B23 | Registrar la revisión humana y recalcular | hecha | laqg | fcd19bb, d5c9811 | |
 | 28 | HU-B24 | Responder preguntas sobre una licitación | hecha | laqg | 7b5e003, e20f124 | |
 | 29 | HU-B25 | Generar el borrador de una observación | hecha | laqg | 2d1d73e, 8db452c | |
+| 30 | HU-B29 | Exportar la matriz a Excel | hecha | laqg | bdf7451, 373e894 | |
 
-Fuera de este plan: HU-B28, B29 (Could). Las Should y Could que se implementan se añaden a la
-tabla con su número de orden.
+Fuera de este plan: HU-B28 (Could). Las Should y Could que se implementan se añaden a la tabla
+con su número de orden.
 
 Dependencias que fijan el orden: HU-B01 antes de todo lo protegido; T-01 antes de HU-B04 y
 HU-B07 (rutas y URL del almacenamiento); HU-B26 antes de las historias que llaman a NVIDIA;
@@ -165,3 +166,5 @@ Se completa al cerrar cada historia.
   cronograma del pliego.
 - **Observaciones (HU-B25).** El borrador no se guarda: cada solicitud vuelve a llamar a Claude
   y cuenta para `CUOTA_OBSERVACIONES_DIARIA`.
+- **Exportación (HU-B29).** Los textos que empiezan con `=`, `+`, `-` o `@` se ven en Excel con
+  un apóstrofo delante: es el costo de neutralizar fórmulas (S-12).
