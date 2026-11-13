@@ -1202,6 +1202,17 @@
       },
       "RevisionOut": {
         "properties": {
+          "autor_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Autor Email"
+          },
           "comentario": {
             "title": "Comentario",
             "type": "string"
@@ -2323,7 +2334,7 @@
     },
     "/api/licitaciones/{licitacion_id}/reintentar": {
       "post": {
-        "description": "Reencola el último análisis fallido. Con el checkpointer (P-08) se reanuda donde quedó.",
+        "description": "Reencola el último análisis o recálculo fallido (HU-B09, HU-B23).\n\nCon el checkpointer (P-08) un análisis se reanuda donde quedó; un recálculo tras una\nrevisión humana solo repite brechas, recomendación y justificación.",
         "operationId": "reintentar_api_licitaciones__licitacion_id__reintentar_post",
         "parameters": [
           {

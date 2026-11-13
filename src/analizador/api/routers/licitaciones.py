@@ -417,15 +417,21 @@ async def trabajos(
 async def reintentar(
     licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep, publicador: PublicadorDep
 ) -> TrabajoProcesamiento:
-    """Reencola el último análisis fallido. Con el checkpointer (P-08) se reanuda donde quedó."""
+    """Reencola el último análisis o recálculo fallido (HU-B09, HU-B23).
+
+    Con el checkpointer (P-08) un análisis se reanuda donde quedó; un recálculo tras una
+    revisión humana solo repite brechas, recomendación y justificación.
+    """
     await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
     trabajo = await session.scalar(
         select(TrabajoProcesamiento)
         .where(
             TrabajoProcesamiento.licitacion_id == licitacion_id,
-            TrabajoProcesamiento.tipo == TipoTrabajo.ANALISIS,
+            TrabajoProcesamiento.organizacion_id == contexto.organizacion_id,
+            TrabajoProcesamiento.tipo.in_([TipoTrabajo.ANALISIS, TipoTrabajo.REEVALUACION]),
         )
-        .order_by(TrabajoProcesamiento.creado_en.desc())
+        .order_by(TrabajoProcesamiento.creado_en.desc(), TrabajoProcesamiento.id.desc())
+        .limit(1)
     )
     if trabajo is None or trabajo.estado != EstadoTrabajo.FALLIDO:
         raise HTTPException(status.HTTP_409_CONFLICT, "No hay un análisis fallido que reintentar")
@@ -435,7 +441,7 @@ async def reintentar(
     trabajo.intentos = 0  # el límite de entregas es por reintento, no de por vida
     await session.commit()
     try:
-        await publicador.publicar(TipoTrabajo.ANALISIS, trabajo.id)
+        await publicador.publicar(trabajo.tipo, trabajo.id)
     except Exception as exc:
         # Sin mensaje en la cola el trabajo no puede quedar "en cola": vuelve a fallido.
         logger.exception("No se pudo reencolar el trabajo %s", trabajo.id)
