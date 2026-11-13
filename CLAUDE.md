@@ -78,4 +78,4 @@ tests/              unitarias en la raíz; tests/integracion/ usa PostgreSQL rea
 
 `/criterio-security-review` y `/criterio-architecture-review` (en `.claude/skills/`) revisan
 seguridad y arquitectura frente al DAS y las HU. Catálogo, origen y mantenimiento en
-[agent_skills.md](agent_skills.md).
+[agent_skills.md](docs/desarrollo/agent_skills.md).

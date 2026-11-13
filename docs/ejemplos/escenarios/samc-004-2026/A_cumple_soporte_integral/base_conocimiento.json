@@ -1,0 +1,132 @@
+{
+  "empresa": {
+    "razon_social": "Soporte Integral del Magdalena S.A.S.",
+    "nit": "901456789-3",
+    "ciudad": "Ibagué, Tolima",
+    "representante_legal": "Andrea Patricia Lozano Cárdenas"
+  },
+  "financiero": [
+    {
+      "anio": 2025,
+      "indice_liquidez": 2.2439,
+      "indice_endeudamiento": 0.45,
+      "razon_cobertura_intereses": 6.4211,
+      "capital_trabajo_cop": 1020000000,
+      "patrimonio_cop": 1980000000,
+      "rentabilidad_patrimonio": 0.3081,
+      "rentabilidad_activo": 0.1694
+    }
+  ],
+  "contratos": [
+    {
+      "id": "SI-2023-011",
+      "objeto": "Prestación de servicios de mesa de ayuda y soporte técnico de primer y segundo nivel para la plataforma tecnológica hospitalaria (equipos, red, correo y sistema de información clínico).",
+      "entidad_contratante": "E.S.E. Hospital San Rafael de Espinal (pública)",
+      "fecha_inicio": "2023-02-01",
+      "fecha_fin": "2024-01-31",
+      "valor_cop": 612000000,
+      "valor_smmlv": 527.59,
+      "codigos_unspsc": [
+        "81111800",
+        "81112100"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Cumplimiento de ANS: 97,4 %. Atención promedio de 3.900 tiquetes mensuales con mesa 7x24 para incidentes críticos y 9 técnicos en sitio."
+    },
+    {
+      "id": "SI-2024-020",
+      "objeto": "Soporte técnico y mesa de ayuda para la infraestructura de cómputo y comunicaciones de la Gobernación.",
+      "entidad_contratante": "Gobernación del Tolima (pública)",
+      "fecha_inicio": "2024-03-01",
+      "fecha_fin": "2025-02-28",
+      "valor_cop": 540000000,
+      "valor_smmlv": 415.38,
+      "codigos_unspsc": [
+        "81111800"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Cumplimiento de ANS: 96,1 %. Herramienta de gestión de servicios con trazabilidad completa; informe mensual de ANS."
+    }
+  ],
+  "personas": [
+    {
+      "id": "P-SI-01",
+      "nombre": "Mauricio Esteban Quiroga Lemus",
+      "profesion": "Ingeniero de sistemas",
+      "anios_experiencia_general": 13,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Ingeniería de Sistemas",
+          "institucion": "Universidad de Ibagué",
+          "anio": 2013
+        },
+        {
+          "nivel": "especialización",
+          "titulo": "Gerencia de Proyectos de TI",
+          "institucion": "Universidad del Tolima",
+          "anio": 2016
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Coordinador de mesa de ayuda",
+          "entidad": "Soporte Integral del Magdalena S.A.S.",
+          "fecha_inicio": "2019-01-15",
+          "fecha_fin": null,
+          "descripcion": "Coordinación de un equipo de 12 técnicos y gestión de ANS para clientes del sector salud."
+        },
+        {
+          "cargo": "Ingeniero de soporte de segundo nivel",
+          "entidad": "Redes y Servicios del Tolima Ltda.",
+          "fecha_inicio": "2013-08-01",
+          "fecha_fin": "2018-12-31",
+          "descripcion": "Soporte de infraestructura, redes y servidores."
+        }
+      ],
+      "certificaciones": [
+        "ITIL 4 Foundation (PeopleCert, expedida 2020-04-18, sin vencimiento)",
+        "Scrum Fundamentals Certified (2021)"
+      ]
+    }
+  ],
+  "certificaciones": [
+    {
+      "nombre": "ISO 9001:2015",
+      "entidad_emisora": "Bureau Certificador Andino (acreditado ONAC)",
+      "fecha_expedicion": "2025-05-12",
+      "fecha_vencimiento": "2028-05-11",
+      "alcance": "Prestación de servicios de mesa de ayuda, soporte técnico de tecnologías de la información y desarrollo de software."
+    }
+  ],
+  "capacidades": [
+    {
+      "nombre": "Mesa de ayuda 7x24",
+      "descripcion": "Centro de servicio propio en Ibagué con operación 7x24 para incidentes críticos y horario hábil extendido de 7:00 a. m. a 7:00 p. m."
+    },
+    {
+      "nombre": "Personal técnico de soporte",
+      "descripcion": "Planta de 26 técnicos de soporte certificados; disponibilidad para destacar 2 técnicos permanentes en sede del cliente."
+    },
+    {
+      "nombre": "Herramienta de gestión de servicios",
+      "descripcion": "Plataforma ITSM con trazabilidad de tiquetes, encuestas de satisfacción e indicadores de ANS en tiempo real."
+    },
+    {
+      "nombre": "Duración de la sociedad",
+      "descripcion": "Constituida el 2012-03-14; duración hasta el 2062-03-14. Certificado de existencia expedido el 2026-11-06."
+    },
+    {
+      "nombre": "Registro Único de Proponentes",
+      "descripcion": "Vigente y en firme; códigos UNSPSC: 81111800, 81112100, 81111500, 81112200."
+    },
+    {
+      "nombre": "Garantía de seriedad de la oferta",
+      "descripcion": "$85.000.000, vigencia 2026-11-24 a 2027-03-24."
+    },
+    {
+      "nombre": "Seguridad social y parafiscales",
+      "descripcion": "Al día; certificación firmada por: Revisor fiscal Jorge Iván Salcedo, T.P. 145882-T."
+    }
+  ]
+}
