@@ -2592,6 +2592,7 @@
     },
     "/api/miembros": {
       "get": {
+        "description": "Miembros de la organización con su rol y si la invitación sigue pendiente (HU-B03).",
         "operationId": "listar_api_miembros_get",
         "parameters": [
           {
@@ -2717,6 +2718,7 @@
     },
     "/api/miembros/{miembro_id}": {
       "delete": {
+        "description": "Retira a un miembro: pierde el acceso en su siguiente petición (HU-B03).",
         "operationId": "eliminar_api_miembros__miembro_id__delete",
         "parameters": [
           {
@@ -2775,6 +2777,7 @@
     },
     "/api/miembros/{miembro_id}/rol": {
       "patch": {
+        "description": "Cambia el rol de un miembro de la organización (HU-B03).",
         "operationId": "cambiar_rol_api_miembros__miembro_id__rol_patch",
         "parameters": [
           {

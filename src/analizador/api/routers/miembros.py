@@ -35,14 +35,15 @@ async def _miembro_de_org(
 
 
 async def _es_ultimo_admin(session: AsyncSession, miembro: Miembro) -> bool:
+    """Bloquea las filas de administradores para que dos cambios simultáneos no los agoten."""
     if miembro.rol != Rol.ADMINISTRADOR:
         return False
-    admins = await session.scalar(
-        select(func.count())
-        .select_from(Miembro)
+    admins = await session.scalars(
+        select(Miembro.id)
         .where(Miembro.organizacion_id == miembro.organizacion_id, Miembro.rol == Rol.ADMINISTRADOR)
+        .with_for_update()
     )
-    return admins == 1
+    return len(list(admins)) == 1
 
 
 def _auditar(
@@ -66,6 +67,7 @@ def _auditar(
 
 @router.get("", response_model=list[MiembroOut])
 async def listar(contexto: AdminDep, session: SessionDep) -> list[Miembro]:
+    """Miembros de la organización con su rol y si la invitación sigue pendiente (HU-B03)."""
     resultado = await session.scalars(
         select(Miembro)
         .where(Miembro.organizacion_id == contexto.organizacion_id)
@@ -128,23 +130,34 @@ async def invitar(datos: InvitacionIn, contexto: AdminDep, session: SessionDep) 
 async def cambiar_rol(
     miembro_id: uuid.UUID, datos: CambioRolIn, contexto: AdminDep, session: SessionDep
 ) -> Miembro:
+    """Cambia el rol de un miembro de la organización (HU-B03)."""
     miembro = await _miembro_de_org(session, contexto.organizacion_id, miembro_id)
-    if datos.rol != Rol.ADMINISTRADOR and await _es_ultimo_admin(session, miembro):
+    if datos.rol == miembro.rol:
+        return miembro
+    if await _es_ultimo_admin(session, miembro):
         raise HTTPException(
             status.HTTP_409_CONFLICT, "No se puede degradar al último administrador"
         )
+    anterior = miembro.rol
     miembro.rol = datos.rol
+    session.add(
+        _auditar(
+            contexto, AccionMiembro.CAMBIO_ROL, miembro, rol_anterior=anterior, rol_nuevo=datos.rol
+        )
+    )
     await session.commit()
     return miembro
 
 
 @router.delete("/{miembro_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def eliminar(miembro_id: uuid.UUID, contexto: AdminDep, session: SessionDep) -> None:
+    """Retira a un miembro: pierde el acceso en su siguiente petición (HU-B03)."""
     miembro = await _miembro_de_org(session, contexto.organizacion_id, miembro_id)
     if await _es_ultimo_admin(session, miembro):
         raise HTTPException(
             status.HTTP_409_CONFLICT, "No se puede eliminar al último administrador"
         )
     # El usuario sigue existiendo en Supabase; solo pierde el acceso a esta organización.
+    session.add(_auditar(contexto, AccionMiembro.RETIRO, miembro, rol_anterior=miembro.rol))
     await session.delete(miembro)
     await session.commit()
