@@ -43,7 +43,15 @@ class Settings(BaseSettings):
     # Cuotas por organización en 24 horas móviles.
     cuota_analisis_diaria: int = Field(default=20, gt=0)
     cuota_chat_diaria: int = Field(default=200, gt=0)
+    # Borradores de observación con Claude por organización y 24 horas (HU-B25, S-08).
+    cuota_observaciones_diaria: int = Field(default=30, gt=0)
     chat_max_caracteres: int = Field(default=2000, gt=0)
+    # Fragmentos del pliego que recibe el chat como contexto (HU-B24).
+    chat_fragmentos: int = Field(default=6, gt=0, le=30)
+    # Ítems del resultado que recibe el chat como contexto, brechas y revisiones primero.
+    chat_max_items_contexto: int = Field(default=40, gt=0, le=200)
+    # Longitud máxima de cada fragmento del pliego indexado para el chat.
+    pliego_fragmento_caracteres: int = Field(default=1500, ge=300, le=8000)
 
     # --- Anthropic (C-10) ---
     anthropic_api_key: SecretStr | None = None
@@ -113,9 +121,8 @@ class Settings(BaseSettings):
     # Similitud mínima (0 a 100) entre una cita y su fuente para darla por verificada.
     # Valor provisional (Q-14).
     citas_umbral_similitud: float = Field(default=90, ge=0, le=100)
-    # Confianza (0 a 1) por debajo de la cual un ítem cualitativo pasa a revisión humana.
-    # Valor provisional (Q-14).
-    revision_confianza_minima: float = Field(default=0.7, ge=0, le=1)
+    # Confianza mínima de una evaluación automática (Q-14, valor de la demo).
+    revision_umbral_confianza: float = Field(default=0.70, ge=0, le=1)
 
     # --- Pipeline ---
     pipeline_checkpointer_enabled: bool = True

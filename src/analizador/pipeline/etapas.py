@@ -9,18 +9,18 @@ from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import Any
 
-from analizador.models.enums import EstadoLicitacion
 from analizador.pipeline import (
     catalogo,
     citas,
     cobertura,
+    decision,
     evidencia,
     extraccion,
     filtrado,
+    indexacion_pliego,
     lectura,
     localizacion,
     progreso,
-    revision,
     secciones,
     verificacion,
 )
@@ -92,8 +92,10 @@ async def comprobar_cobertura(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("recuperacion_evidencia")
 async def recuperar_evidencia(estado: EstadoAnalisis) -> dict[str, Any]:
-    # Etapa 6: fragmentos de la base de conocimiento más cercanos a cada ítem (HU-B16).
+    # Etapa 6: fragmentos de la base de conocimiento más cercanos a cada ítem (HU-B16) e
+    # índice del pliego para el chat, de mejor esfuerzo (HU-B24).
     await evidencia.ejecutar(estado)
+    await indexacion_pliego.ejecutar(estado)
     return {}
 
 
@@ -108,29 +110,24 @@ async def verificar(estado: EstadoAnalisis) -> dict[str, Any]:
 async def validar_citas(estado: EstadoAnalisis) -> dict[str, Any]:
     # Etapa 8: cada cita se comprueba contra su fuente; si no coincide, a revisión (HU-B18).
     await citas.ejecutar(estado)
-    # Con las citas ya comprobadas se decide qué ítems necesitan revisión humana (HU-B20).
-    await revision.ejecutar(estado)
     return {}
 
 
 @etapa("decision")
 async def decidir(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 9): brechas y recomendación por reglas [P-05]. Reglas sin definir (Q-04).
+    await decision.preparar(estado)
     return {}
 
 
 @etapa("justificacion")
 async def justificar(estado: EstadoAnalisis) -> dict[str, Any]:
-    # TODO(etapa 10): redactar la justificación con el modelo de Anthropic [P].
+    await decision.justificar(estado)
     return {}
 
 
 @etapa("cierre")
 async def cerrar(estado: EstadoAnalisis) -> dict[str, Any]:
-    # Etapa 11: marcar la licitación como completada. El trabajo lo cierra el worker.
-    await progreso.marcar_licitacion(
-        uuid.UUID(estado["licitacion_id"]), EstadoLicitacion.COMPLETADA
-    )
+    await decision.cerrar(estado)
     return {}
 
 

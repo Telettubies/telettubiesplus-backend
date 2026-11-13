@@ -32,8 +32,8 @@ Convenciones heredadas del andamiaje: SQLAlchemy 2 asíncrono, Alembic, enumerac
 | Contratos de datos | Se definen en `src/analizador/contratos/` con un JSON sintético de ejemplo | P-18 (no aprobada) |
 | Lectura de PDF | PyMuPDF (texto, coordenadas, render) y pdfplumber (tablas) | Etapa 1 [P]; R-13 por la licencia AGPL |
 | OCR | Tesseract en español; Claude con visión como respaldo. Se implementa dentro de HU-B10 | P-09 (no aprobada) |
-| Reglas de recomendación | Estricta (ver sección 5) | P-05, Q-04 (no aprobadas) |
-| Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST | **Reemplaza ADR-005 (AWS S3)** |
+| Reglas de recomendación | Estricta para la demo (ver sección 5) | P-05, Q-04, confirmadas para la demo |
+| Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST. Confirmada por el equipo el 2026-11-12 | **Reemplaza ADR-005 (AWS S3)**; falta reflejarlo en el DAS v0.4 |
 
 ## 3. Orden de implementación y seguimiento
 
@@ -60,13 +60,20 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 17 | HU-B16 | Recuperar evidencia de la base de conocimiento | hecha | sar | 65f418a, bc2631e | #22 |
 | 18 | HU-B17 | Verificar el cumplimiento de cada ítem | hecha | sar | 073cac9, ee945fe | #23 |
 | 19 | HU-B18 | Validar que las citas existen en la fuente | hecha | sar | ab07bd9, a17aa67 | #24 |
-| 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | hecha | sar | bf53afd, 89aedff | #25 |
-| 21 | HU-B19 | Calcular brechas, recomendación y justificación | pendiente | sar | | |
-| 22 | HU-B21 | Entregar el resultado y el acceso al PDF | pendiente | sar | | |
+| 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | hecha | laqg | 325aa93, f023046 | |
+| 21 | HU-B19 | Calcular brechas, recomendación y justificación | hecha | laqg | 8db204a, eb5ccf8 | |
+| 22 | HU-B21 | Entregar el resultado y el acceso al PDF | hecha; integración frontend pendiente | laqg | ee6f7fe, 8bf0dd2 | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
+| 24 | HU-B02 | Invitar un usuario a la organización | hecha | laqg | f91e973, 4b5e190 | |
+| 25 | HU-B03 | Gestionar miembros y roles | hecha | laqg | 9b4479a, 3f60c1b | |
+| 26 | HU-B22 | Listar las licitaciones de la organización | hecha | laqg | ed22d5c, 162f92a | |
+| 27 | HU-B23 | Registrar la revisión humana y recalcular | hecha | laqg | fcd19bb, d5c9811 | |
+| 28 | HU-B24 | Responder preguntas sobre una licitación | hecha | laqg | 7b5e003, e20f124 | |
+| 29 | HU-B25 | Generar el borrador de una observación | hecha | laqg | 2d1d73e, 8db452c | |
+| 30 | HU-B29 | Exportar la matriz a Excel | hecha | laqg | bdf7451, 373e894 | |
 
-Fuera de este plan: HU-B02, B03, B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Parte de
-su código ya existe en el andamiaje; solo se toca para garantizar el aislamiento (HU-B04).
+Fuera de este plan: HU-B28 (Could). Las Should y Could que se implementan se añaden a la tabla
+con su número de orden.
 
 Dependencias que fijan el orden: HU-B01 antes de todo lo protegido; T-01 antes de HU-B04 y
 HU-B07 (rutas y URL del almacenamiento); HU-B26 antes de las historias que llaman a NVIDIA;
@@ -84,7 +91,7 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
 
 ## 5. Supuestos
 
-1. **Reglas de recomendación (Q-04).** En este orden: (a) hay ítems en revisión, secciones sin
+1. **Reglas de recomendación (Q-04, confirmadas para la demo).** En este orden: (a) hay ítems en revisión, secciones sin
    procesar o ningún ítem extraído → `condicionada`; (b) algún ítem habilitante en *no cumple* o
    *cumple parcialmente* → `no_presentarse`; (c) cualquier otra brecha → `presentarse_con_riesgo`;
    (d) sin brechas → `presentarse`.
@@ -106,6 +113,19 @@ HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems que
     caracteres por pregunta, 30 peticiones por minuto a NVIDIA con 5 reintentos, y 3 entregas y
     3600 s por trabajo de análisis. La cuota es una ventana móvil de 24 horas, no un día de
     calendario. Son cifras de partida, no decisiones del equipo: hay que confirmarlas.
+
+### Criterios confirmados para la demo
+
+- HU-B20 envía un ítem automático a revisión por requisito ambiguo, cita no verificada o
+  confianza menor que `REVISION_UMBRAL_CONFIANZA` (0,70 para la demo). Conserva el estado
+  propuesto y registra los motivos. Las revisiones humanas existentes se respetan.
+- HU-B19 calcula la recomendación en código. `ANTHROPIC_MODEL_REDACCION` explica la decisión
+  con referencias a los numerales entregados. El cierre requiere una recomendación y una
+  justificación consolidada para el trabajo.
+- HU-B21 expone `GET /api/licitaciones/{id}/resultado` y `GET /api/licitaciones/{id}/pdf-url`.
+  El resultado activo devuelve 202 con progreso. Un análisis anterior que cerró sin decisión
+  devuelve 409. La matriz no introduce códigos de proceso ni entidades que el backend aún no
+  persiste. El contrato actualizado está en [OpenAPI](openapi.json).
 
 ## 6. Ambigüedades detectadas
 
@@ -137,4 +157,14 @@ Se completa al cerrar cada historia.
 - **Experiencia sin código UNSPSC (HU-B17).** Si el requisito no exige un código, no hay forma
   determinista de saber qué contratos son pertinentes: el ítem pasa a revisión cuando alcanza
   lo exigido, lo que deja la recomendación condicionada hasta que alguien lo confirme.
-- **Chat (HU-B24).** Los límites están aplicados, pero nada registra todavía las preguntas.
+- **Chat (HU-B24).** No guarda el historial de la conversación (lo conserva el frontend,
+  HU-F12). Las licitaciones analizadas antes de esta versión no tienen el pliego indexado: el
+  chat responde 409 hasta reanalizarlas.
+- **Correos con cuenta (HU-B02).** Supabase no reinvita un correo que ya tiene cuenta (por
+  ejemplo, de otra organización): la API responde 409. Agregar usuarios existentes queda pendiente.
+- **Fecha de cierre (HU-B22).** El listado no la incluye: el backend aún no persiste el
+  cronograma del pliego.
+- **Observaciones (HU-B25).** El borrador no se guarda: cada solicitud vuelve a llamar a Claude
+  y cuenta para `CUOTA_OBSERVACIONES_DIARIA`.
+- **Exportación (HU-B29).** Los textos que empiezan con `=`, `+`, `-` o `@` se ven en Excel con
+  un apóstrofo delante: es el costo de neutralizar fórmulas (S-12).

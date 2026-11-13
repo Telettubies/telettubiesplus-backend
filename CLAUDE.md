@@ -4,6 +4,9 @@ Backend del analizador de pliegos (reto 12). La arquitectura de referencia es el
 plan vivo está en `docs/PLAN.md`: léelo antes de implementar una historia y actualiza su tabla
 de seguimiento al cerrarla.
 
+Las reglas de rama, autorización de Git y seguridad del agente están en @AGENTS.md (Codex lo
+lee directamente). En Git manda `AGENTS.md`; en convenciones técnicas, este archivo.
+
 ## Comandos
 
 ```bash
@@ -63,7 +66,16 @@ tests/              unitarias en la raíz; tests/integracion/ usa PostgreSQL rea
 
 ## Flujo de trabajo
 
-- Rama de trabajo: `sar`. Un PR hacia `develop` por historia; se fusiona con el CI en verde.
+- Cada integrante trabaja en su propia rama (ver `AGENTS.md`). Un PR hacia `develop` por
+  historia; se fusiona con el CI en verde.
 - `main` despliega en producción: no se hace push ni merge ahí desde el trabajo diario.
 - Commits atómicos con Conventional Commits: `feat(HU-B07): guardar el pliego en el almacenamiento`.
 - Nunca `push --force` ni reescritura de historia compartida.
+- El repositorio guarda finales de línea LF. En Windows, antes de preparar un commit, compara
+  `git diff --stat` con `git diff --ignore-cr-at-eol --stat`: no subas archivos convertidos enteros.
+
+## Skills de revisión
+
+`/criterio-security-review` y `/criterio-architecture-review` (en `.claude/skills/`) revisan
+seguridad y arquitectura frente al DAS y las HU. Catálogo, origen y mantenimiento en
+[agent_skills.md](agent_skills.md).

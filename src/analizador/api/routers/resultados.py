@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
 from analizador.models import Item, Licitacion, Requisito, Resultado, Revision, TrabajoProcesamiento
-from analizador.models.enums import TipoTrabajo
+from analizador.models.enums import EstadoLicitacion, TipoTrabajo
 from analizador.pipeline import progreso
 from analizador.schemas import RevisionCreada, RevisionIn, RevisionOut, TrabajoOut
 
@@ -30,7 +30,7 @@ async def revisar(
     # S-03: el resultado se alcanza a través de su licitación, filtrando por organización.
     fila = (
         await session.execute(
-            select(Resultado, Licitacion.id)
+            select(Resultado, Licitacion.id, Licitacion.estado)
             .join(Item, Resultado.item_id == Item.id)
             .join(Requisito, Item.requisito_id == Requisito.id)
             .join(Licitacion, Requisito.licitacion_id == Licitacion.id)
@@ -41,7 +41,12 @@ async def revisar(
     ).first()
     if fila is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Resultado no encontrado")
-    resultado, licitacion_id = fila
+    resultado, licitacion_id, estado_licitacion = fila
+    if estado_licitacion != EstadoLicitacion.COMPLETADA:
+        # Recalcular sobre un análisis en curso mezclaría resultados parciales (HU-B23).
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Solo se pueden revisar ítems de un análisis terminado."
+        )
 
     # N-01: la revisión queda registrada con autor, estado anterior y motivo.
     revision = Revision(
@@ -70,6 +75,6 @@ async def revisar(
 
     await session.refresh(revision)
     await session.refresh(trabajo)
-    return RevisionCreada(
-        revision=RevisionOut.model_validate(revision), trabajo=TrabajoOut.model_validate(trabajo)
-    )
+    salida = RevisionOut.model_validate(revision)
+    salida.autor_email = contexto.miembro.email
+    return RevisionCreada(revision=salida, trabajo=TrabajoOut.model_validate(trabajo))

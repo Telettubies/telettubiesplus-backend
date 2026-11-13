@@ -8,8 +8,9 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from analizador.contratos.decision import EstadoMatriz, Recomendacion
 from analizador.models.enums import (
     EstadoCumplimiento,
     EstadoLicitacion,
@@ -35,18 +36,36 @@ class MiembroOut(_Orm):
     usuario_id: uuid.UUID
     email: str
     rol: Rol
+    invitacion_pendiente: bool
     creado_en: datetime
+
+
+class MembresiaOut(MiembroOut):
+    """Membresía con el nombre de su organización, para mostrarlo en la interfaz."""
+
+    organizacion_nombre: str
 
 
 class YoOut(BaseModel):
     usuario_id: uuid.UUID
     email: str | None
-    membresias: list[MiembroOut]
+    membresias: list[MembresiaOut]
 
 
 class InvitacionIn(BaseModel):
     email: EmailStr
     rol: Rol = Rol.REVISOR
+
+
+class OrganizacionIn(BaseModel):
+    """Alta de la organización propia: solo el nombre (organizaciones.nombre)."""
+
+    nombre: str = Field(min_length=2, max_length=200)
+
+    @field_validator("nombre", mode="before")
+    @classmethod
+    def _recortar(cls, valor: object) -> object:
+        return valor.strip() if isinstance(valor, str) else valor
 
 
 class CambioRolIn(BaseModel):
@@ -130,6 +149,8 @@ class UbicacionOut(_Orm):
 class RevisionOut(_Orm):
     id: uuid.UUID
     usuario_id: uuid.UUID
+    # Correo del miembro que revisó, si sigue en la organización (HU-B23, criterio 4).
+    autor_email: str | None = None
     estado_anterior: EstadoCumplimiento
     estado_nuevo: EstadoCumplimiento
     comentario: str
@@ -171,12 +192,95 @@ class LicitacionDetalle(LicitacionResumen):
     requisitos: list[RequisitoOut]
 
 
+class UrlPdfOut(BaseModel):
+    pdf_url_temporal: str
+
+
+class ZonaMatrizOut(BaseModel):
+    pagina: int
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class UbicacionMatrizOut(BaseModel):
+    pagina: int
+    precision: PrecisionUbicacion
+    zonas: list[ZonaMatrizOut]
+
+
+class EvidenciaMatrizOut(BaseModel):
+    fuente_id: str | None
+    fuente_nombre: str | None
+    cita_literal: str
+    cita_verificada: bool
+    similitud: float | None
+
+
+class ItemMatrizOut(BaseModel):
+    id: uuid.UUID
+    requisito_id: uuid.UUID
+    resultado_id: uuid.UUID | None
+    codigo_req: str
+    numeral: str
+    categoria: TipoRequisito
+    texto_requisito_literal: str
+    texto_requisito_verificado: bool | None
+    descripcion_item: str
+    estado: EstadoMatriz
+    estado_propuesto: EstadoCumplimiento | None
+    motivo_revision: str | None
+    es_ambiguo: bool
+    evidencia: EvidenciaMatrizOut | None
+    evidencias: list[EvidenciaMatrizOut]
+    faltante: str | None
+    confianza: float | None
+    ubicacion: UbicacionMatrizOut
+    revisiones: list[RevisionOut]
+
+
+class CoberturaMatrizOut(BaseModel):
+    secciones_procesadas: int
+    secciones_total: int
+    numerales_no_procesados: list[str]
+
+
+class ResultadoMatrizOut(BaseModel):
+    licitacion_id: uuid.UUID
+    nombre: str
+    fecha_carga: datetime
+    pdf_nombre: str
+    pdf_paginas: int | None
+    pdf_url_temporal: str
+    recomendacion: Recomendacion
+    justificacion: str
+    cobertura: CoberturaMatrizOut
+    resumen_estados: dict[EstadoMatriz, int]
+    categorias: dict[TipoRequisito, dict[EstadoMatriz, int]]
+    items: list[ItemMatrizOut]
+    brechas: list[ItemMatrizOut]
+
+
+class ErrorResultadoOut(BaseModel):
+    detail: str
+
+
 # --- Revisión humana (RF-14) ---------------------------------------------------
 
 
 class RevisionIn(BaseModel):
     estado_nuevo: EstadoCumplimiento
     comentario: str = Field(min_length=1, max_length=4000)
+
+    @field_validator("comentario")
+    @classmethod
+    def _comentario_con_texto(cls, valor: str) -> str:
+        # HU-B23: el comentario es obligatorio; solo espacios no cuenta como comentario.
+        valor = valor.strip()
+        if not valor:
+            raise ValueError("El comentario es obligatorio")
+        return valor
 
 
 class RevisionCreada(BaseModel):
@@ -238,3 +342,29 @@ class LimitesOut(BaseModel):
 
 class PreguntaIn(BaseModel):
     pregunta: str = Field(min_length=1)
+
+
+class CitaChatOut(BaseModel):
+    numeral: str
+    pagina: int | None
+
+
+class RespuestaChatOut(BaseModel):
+    """Respuesta del chat de una licitación (HU-B24). Texto plano: nunca se renderiza como HTML."""
+
+    respuesta: str
+    encontrado: bool
+    citas: list[CitaChatOut]
+
+
+class ObservacionIn(BaseModel):
+    requisito_id: uuid.UUID
+
+
+class ObservacionOut(BaseModel):
+    """Borrador de observación para la entidad (HU-B25). El sistema no lo envía."""
+
+    requisito_id: uuid.UUID
+    numeral: str
+    asunto: str
+    texto: str

@@ -3,19 +3,30 @@
 import hashlib
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, status
+import anthropic
+from fastapi import APIRouter, File, Form, HTTPException, Query, Response, UploadFile, status
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from analizador.api import cuotas
+from analizador.api import chat as chat_licitacion
+from analizador.api import cuotas, exportacion, matriz
+from analizador.api import observaciones as borradores
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
+from analizador.contratos.decision import Recomendacion
 from analizador.core.config import get_settings
-from analizador.integrations import almacenamiento
+from analizador.integrations import almacenamiento, nvidia
+from analizador.integrations.anthropic_client import (
+    ModeloNoConfiguradoError,
+    RespuestaRechazadaError,
+)
 from analizador.models import (
+    EventoUso,
     Item,
     Licitacion,
     Requisito,
@@ -23,18 +34,24 @@ from analizador.models import (
     Seccion,
     TrabajoProcesamiento,
 )
-from analizador.models.enums import EstadoTrabajo, TipoTrabajo
+from analizador.models.enums import EstadoLicitacion, EstadoTrabajo, TipoTrabajo, TipoUso
 from analizador.pipeline import catalogo
 from analizador.schemas import (
+    ErrorResultadoOut,
     EtapaOut,
     LicitacionCreada,
     LicitacionDetalle,
     LicitacionResumen,
+    ObservacionIn,
+    ObservacionOut,
     PreguntaIn,
     ProgresoOut,
     RequisitoOut,
+    RespuestaChatOut,
+    ResultadoMatrizOut,
     SeccionesProgreso,
     TrabajoOut,
+    UrlPdfOut,
 )
 
 logger = logging.getLogger(__name__)
@@ -234,12 +251,20 @@ async def cargar_pliego(
 
 
 @router.get("", response_model=list[LicitacionResumen])
-async def listar(contexto: ContextoDep, session: SessionDep) -> list[Licitacion]:
-    """Panel general de licitaciones de la organización (RF-11, RF-12)."""
+async def listar(
+    contexto: ContextoDep,
+    session: SessionDep,
+    orden: Annotated[
+        Literal["recientes", "antiguas"],
+        Query(description="Orden por fecha de carga: primero las más recientes o las más antiguas"),
+    ] = "recientes",
+) -> list[Licitacion]:
+    """Panel de licitaciones de la organización con estado y recomendación (RF-11, HU-B22)."""
+    fecha = Licitacion.creado_en.desc() if orden == "recientes" else Licitacion.creado_en.asc()
     resultado = await session.scalars(
         select(Licitacion)
         .where(Licitacion.organizacion_id == contexto.organizacion_id)
-        .order_by(Licitacion.creado_en.desc())
+        .order_by(fecha, Licitacion.id)
     )
     return list(resultado)
 
@@ -270,6 +295,17 @@ async def detalle(
     )
 
 
+@router.get("/{licitacion_id}/pdf-url", response_model=UrlPdfOut)
+async def renovar_url_pdf(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep, response: Response
+) -> UrlPdfOut:
+    """Renueva el acceso temporal al pliego del visor (HU-B21, RF-26)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    url = await url_del_pdf(licitacion, contexto.organizacion_id)
+    response.headers["Cache-Control"] = "no-store"
+    return UrlPdfOut(pdf_url_temporal=url)
+
+
 @router.get("/{licitacion_id}/progreso", response_model=ProgresoOut)
 async def progreso(
     licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep
@@ -283,13 +319,107 @@ async def progreso(
         select(TrabajoProcesamiento)
         .where(
             TrabajoProcesamiento.licitacion_id == licitacion.id,
+            TrabajoProcesamiento.organizacion_id == contexto.organizacion_id,
             TrabajoProcesamiento.tipo == TipoTrabajo.ANALISIS,
         )
-        .order_by(TrabajoProcesamiento.creado_en.desc())
+        .order_by(TrabajoProcesamiento.creado_en.desc(), TrabajoProcesamiento.id.desc())
     )
     if trabajo is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Licitación no encontrada")
+    return await _progreso_de(session, licitacion, trabajo)
 
+
+@router.get(
+    "/{licitacion_id}/resultado",
+    response_model=ResultadoMatrizOut,
+    responses={202: {"model": ProgresoOut}, 409: {"model": ProgresoOut | ErrorResultadoOut}},
+)
+async def resultado_matriz(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep, response: Response
+) -> ResultadoMatrizOut | JSONResponse:
+    """Entrega el resultado consolidado, o el avance cuando el trabajo sigue activo (HU-B21)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    trabajo = await session.scalar(
+        select(TrabajoProcesamiento)
+        .where(
+            TrabajoProcesamiento.licitacion_id == licitacion.id,
+            TrabajoProcesamiento.organizacion_id == contexto.organizacion_id,
+            TrabajoProcesamiento.tipo.in_([TipoTrabajo.ANALISIS, TipoTrabajo.REEVALUACION]),
+        )
+        .order_by(TrabajoProcesamiento.creado_en.desc(), TrabajoProcesamiento.id.desc())
+        .limit(1)
+    )
+    if trabajo is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Resultado no encontrado")
+    if (
+        trabajo.estado != EstadoTrabajo.COMPLETADO
+        or licitacion.estado != EstadoLicitacion.COMPLETADA
+    ):
+        avance = await _progreso_de(session, licitacion, trabajo)
+        codigo = (
+            status.HTTP_409_CONFLICT
+            if trabajo.estado in (EstadoTrabajo.FALLIDO, EstadoTrabajo.COMPLETADO)
+            else status.HTTP_202_ACCEPTED
+        )
+        return JSONResponse(status_code=codigo, content=avance.model_dump(mode="json"))
+    if licitacion.recomendacion not in tuple(Recomendacion) or not licitacion.justificacion:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "El análisis no contiene un resultado consolidado."
+        )
+    url = await url_del_pdf(licitacion, contexto.organizacion_id)
+    response.headers["Cache-Control"] = "no-store"
+    return await matriz.construir(
+        session,
+        licitacion,
+        contexto.organizacion_id,
+        Recomendacion(licitacion.recomendacion),
+        licitacion.justificacion,
+        url,
+    )
+
+
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@router.get(
+    "/{licitacion_id}/exportar",
+    response_class=Response,
+    responses={200: {"content": {XLSX: {}}, "description": "Matriz en Excel"}},
+)
+async def exportar_matriz(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep
+) -> Response:
+    """Descarga la matriz en Excel: una fila por ítem y una hoja de resumen (HU-B29)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    if (
+        licitacion.estado != EstadoLicitacion.COMPLETADA
+        or licitacion.recomendacion not in tuple(Recomendacion)
+        or not licitacion.justificacion
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "La matriz se puede exportar cuando el análisis termine."
+        )
+    items = await matriz.items_de(session, licitacion, contexto.organizacion_id)
+    contenido = exportacion.libro(
+        licitacion.titulo,
+        Recomendacion(licitacion.recomendacion),
+        licitacion.justificacion,
+        items,
+    )
+    return Response(
+        content=contenido,
+        media_type=XLSX,
+        headers={
+            # El nombre no usa el título: así ningún dato del usuario llega a la cabecera.
+            "Content-Disposition": f'attachment; filename="matriz-{licitacion.id}.xlsx"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+async def _progreso_de(
+    session: AsyncSession, licitacion: Licitacion, trabajo: TrabajoProcesamiento
+) -> ProgresoOut:
     total, procesadas = (
         await session.execute(
             select(
@@ -338,15 +468,21 @@ async def trabajos(
 async def reintentar(
     licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep, publicador: PublicadorDep
 ) -> TrabajoProcesamiento:
-    """Reencola el último análisis fallido. Con el checkpointer (P-08) se reanuda donde quedó."""
+    """Reencola el último análisis o recálculo fallido (HU-B09, HU-B23).
+
+    Con el checkpointer (P-08) un análisis se reanuda donde quedó; un recálculo tras una
+    revisión humana solo repite brechas, recomendación y justificación.
+    """
     await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
     trabajo = await session.scalar(
         select(TrabajoProcesamiento)
         .where(
             TrabajoProcesamiento.licitacion_id == licitacion_id,
-            TrabajoProcesamiento.tipo == TipoTrabajo.ANALISIS,
+            TrabajoProcesamiento.organizacion_id == contexto.organizacion_id,
+            TrabajoProcesamiento.tipo.in_([TipoTrabajo.ANALISIS, TipoTrabajo.REEVALUACION]),
         )
-        .order_by(TrabajoProcesamiento.creado_en.desc())
+        .order_by(TrabajoProcesamiento.creado_en.desc(), TrabajoProcesamiento.id.desc())
+        .limit(1)
     )
     if trabajo is None or trabajo.estado != EstadoTrabajo.FALLIDO:
         raise HTTPException(status.HTTP_409_CONFLICT, "No hay un análisis fallido que reintentar")
@@ -356,7 +492,7 @@ async def reintentar(
     trabajo.intentos = 0  # el límite de entregas es por reintento, no de por vida
     await session.commit()
     try:
-        await publicador.publicar(TipoTrabajo.ANALISIS, trabajo.id)
+        await publicador.publicar(trabajo.tipo, trabajo.id)
     except Exception as exc:
         # Sin mensaje en la cola el trabajo no puede quedar "en cola": vuelve a fallido.
         logger.exception("No se pudo reencolar el trabajo %s", trabajo.id)
@@ -371,12 +507,12 @@ async def reintentar(
     return trabajo
 
 
-@router.post("/{licitacion_id}/chat", status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@router.post("/{licitacion_id}/chat", response_model=RespuestaChatOut)
 async def chat(
     licitacion_id: uuid.UUID, datos: PreguntaIn, contexto: ContextoDep, session: SessionDep
-) -> None:
-    """Chat de la licitación (RF-13). La respuesta es de HU-B24; los límites ya se aplican."""
-    await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+) -> RespuestaChatOut:
+    """Responde una pregunta sobre el pliego y su resultado, citando numerales (HU-B24)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
     maximo = get_settings().chat_max_caracteres
     if len(datos.pregunta) > maximo:
         raise HTTPException(
@@ -384,15 +520,78 @@ async def chat(
             f"La pregunta supera el máximo de {maximo} caracteres.",
         )
     await cuotas.verificar_cuota_chat(session, contexto.organizacion_id)
-    # TODO(HU-B24): responder con NVIDIA + db.busqueda.fragmentos_cercanos (organización y
-    # licitación) y registrar un EventoUso de tipo PREGUNTA_CHAT por cada pregunta respondida.
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "Chat no implementado")
+    try:
+        respuesta = await chat_licitacion.responder(
+            session, licitacion, contexto.organizacion_id, datos.pregunta
+        )
+    except chat_licitacion.ChatNoDisponibleError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El chat de esta licitación estará disponible cuando termine su análisis.",
+        ) from exc
+    except (nvidia.NvidiaNoDisponibleError, ModeloNoConfiguradoError) as exc:
+        logger.warning("Chat no disponible para la licitación %s", licitacion.id)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "El chat no está disponible en este momento. Intente de nuevo en unos minutos.",
+        ) from exc
+    except chat_licitacion.RespuestaInvalidaError as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "No se pudo generar una respuesta con citas verificables. Reformule la pregunta.",
+        ) from exc
+    # Solo cuenta para la cuota una pregunta respondida (HU-B26).
+    session.add(
+        EventoUso(
+            organizacion_id=contexto.organizacion_id,
+            tipo=TipoUso.PREGUNTA_CHAT,
+            usuario_id=contexto.usuario.usuario_id,
+        )
+    )
+    await session.commit()
+    return respuesta
 
 
-@router.post("/{licitacion_id}/observaciones", status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@router.post("/{licitacion_id}/observaciones", response_model=ObservacionOut)
 async def observaciones(
-    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep
-) -> None:
-    # TODO(RF-15, F-07): borrador de observaciones a partir de requisitos ambiguos (Anthropic).
-    await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "Observaciones no implementadas")
+    licitacion_id: uuid.UUID, datos: ObservacionIn, contexto: ContextoDep, session: SessionDep
+) -> ObservacionOut:
+    """Borrador de observación para un requisito ambiguo; no se envía a la entidad (HU-B25)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    fila = (
+        await session.execute(
+            select(Requisito, Seccion)
+            .join(Seccion, Requisito.seccion_id == Seccion.id)
+            .where(Requisito.id == datos.requisito_id, Requisito.licitacion_id == licitacion.id)
+        )
+    ).first()
+    if fila is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Requisito no encontrado")
+    requisito, seccion = fila
+    if not requisito.ambiguo:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Solo se generan observaciones para requisitos marcados como ambiguos.",
+        )
+    await cuotas.verificar_cuota_observaciones(session, contexto.organizacion_id)
+    try:
+        borrador = await borradores.generar(licitacion, requisito, seccion)
+    except (ModeloNoConfiguradoError, anthropic.APIError) as exc:
+        logger.warning("Borrador de observación no disponible para %s", requisito.id)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "La generación de observaciones no está disponible. Intente de nuevo más tarde.",
+        ) from exc
+    except (RespuestaRechazadaError, ValidationError) as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "No se pudo generar el borrador. Intente de nuevo."
+        ) from exc
+    session.add(
+        EventoUso(
+            organizacion_id=contexto.organizacion_id,
+            tipo=TipoUso.OBSERVACION,
+            usuario_id=contexto.usuario.usuario_id,
+        )
+    )
+    await session.commit()
+    return borrador

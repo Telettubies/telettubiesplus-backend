@@ -14,6 +14,7 @@ from analizador.api.routers import (
     licitaciones,
     limites,
     miembros,
+    organizaciones,
     resultados,
     yo,
 )
@@ -60,6 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         health.router,
         yo.router,
         miembros.router,
+        organizaciones.router,
         licitaciones.router,
         resultados.router,
         conocimiento.router,
