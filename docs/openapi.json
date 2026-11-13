@@ -1,6 +1,95 @@
 {
   "components": {
     "schemas": {
+      "AprobacionIn": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/BaseConocimiento"
+          },
+          "procedencia": {
+            "items": {
+              "$ref": "#/components/schemas/ProcedenciaIn"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Procedencia",
+            "type": "array"
+          },
+          "version_base": {
+            "default": "legacy",
+            "title": "Version Base",
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "procedencia"
+        ],
+        "title": "AprobacionIn",
+        "type": "object"
+      },
+      "BaseConocimiento": {
+        "additionalProperties": false,
+        "properties": {
+          "capacidades": {
+            "items": {
+              "$ref": "#/components/schemas/Capacidad"
+            },
+            "title": "Capacidades",
+            "type": "array"
+          },
+          "certificaciones": {
+            "items": {
+              "$ref": "#/components/schemas/Certificacion"
+            },
+            "title": "Certificaciones",
+            "type": "array"
+          },
+          "contratos": {
+            "items": {
+              "$ref": "#/components/schemas/ContratoEjecutado"
+            },
+            "title": "Contratos",
+            "type": "array"
+          },
+          "empresa": {
+            "$ref": "#/components/schemas/Empresa"
+          },
+          "financiero": {
+            "items": {
+              "$ref": "#/components/schemas/IndicadoresFinancieros"
+            },
+            "title": "Financiero",
+            "type": "array"
+          },
+          "personas": {
+            "items": {
+              "$ref": "#/components/schemas/Persona"
+            },
+            "title": "Personas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "empresa"
+        ],
+        "title": "BaseConocimiento",
+        "type": "object"
+      },
+      "Body_cargar_api_conocimiento_documentos_post": {
+        "properties": {
+          "archivo": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Archivo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "archivo"
+        ],
+        "title": "Body_cargar_api_conocimiento_documentos_post",
+        "type": "object"
+      },
       "Body_cargar_api_conocimiento_post": {
         "properties": {
           "archivo": {
@@ -53,6 +142,83 @@
           "rol"
         ],
         "title": "CambioRolIn",
+        "type": "object"
+      },
+      "Capacidad": {
+        "additionalProperties": false,
+        "properties": {
+          "descripcion": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Descripcion",
+            "type": "string"
+          },
+          "nombre": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Nombre",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nombre",
+          "descripcion"
+        ],
+        "title": "Capacidad",
+        "type": "object"
+      },
+      "Certificacion": {
+        "additionalProperties": false,
+        "properties": {
+          "alcance": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alcance"
+          },
+          "entidad_emisora": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Entidad Emisora",
+            "type": "string"
+          },
+          "fecha_expedicion": {
+            "format": "date",
+            "title": "Fecha Expedicion",
+            "type": "string"
+          },
+          "fecha_vencimiento": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Vencimiento"
+          },
+          "nombre": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Nombre",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nombre",
+          "entidad_emisora",
+          "fecha_expedicion"
+        ],
+        "title": "Certificacion",
         "type": "object"
       },
       "CitaChatOut": {
@@ -120,6 +286,242 @@
           "trabajo"
         ],
         "title": "ConocimientoCargado",
+        "type": "object"
+      },
+      "ContratoEjecutado": {
+        "additionalProperties": false,
+        "properties": {
+          "codigos_unspsc": {
+            "items": {
+              "pattern": "^\\d{8}$",
+              "type": "string"
+            },
+            "title": "Codigos Unspsc",
+            "type": "array"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "entidad_contratante": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Entidad Contratante",
+            "type": "string"
+          },
+          "fecha_fin": {
+            "format": "date",
+            "title": "Fecha Fin",
+            "type": "string"
+          },
+          "fecha_inicio": {
+            "format": "date",
+            "title": "Fecha Inicio",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "objeto": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Objeto",
+            "type": "string"
+          },
+          "porcentaje_participacion": {
+            "default": 100.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Porcentaje Participacion",
+            "type": "number"
+          },
+          "valor_cop": {
+            "exclusiveMinimum": 0.0,
+            "title": "Valor Cop",
+            "type": "integer"
+          },
+          "valor_smmlv": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Smmlv"
+          }
+        },
+        "required": [
+          "id",
+          "objeto",
+          "entidad_contratante",
+          "fecha_inicio",
+          "fecha_fin",
+          "valor_cop"
+        ],
+        "title": "ContratoEjecutado",
+        "type": "object"
+      },
+      "DocumentoOut": {
+        "properties": {
+          "candidatos": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Candidatos",
+            "type": "array"
+          },
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "paginas": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Paginas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "estado",
+          "creado_en",
+          "candidatos",
+          "paginas"
+        ],
+        "title": "DocumentoOut",
+        "type": "object"
+      },
+      "DocumentoResumen": {
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "estado",
+          "creado_en"
+        ],
+        "title": "DocumentoResumen",
+        "type": "object"
+      },
+      "Empresa": {
+        "additionalProperties": false,
+        "properties": {
+          "ciudad": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciudad"
+          },
+          "nit": {
+            "pattern": "^\\d{6,10}(-\\d)?$",
+            "title": "Nit",
+            "type": "string"
+          },
+          "razon_social": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Razon Social",
+            "type": "string"
+          },
+          "representante_legal": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Representante Legal"
+          }
+        },
+        "required": [
+          "razon_social",
+          "nit"
+        ],
+        "title": "Empresa",
         "type": "object"
       },
       "ErrorResultadoOut": {
@@ -252,6 +654,60 @@
         "title": "EvidenciaMatrizOut",
         "type": "object"
       },
+      "Experiencia": {
+        "additionalProperties": false,
+        "properties": {
+          "cargo": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Cargo",
+            "type": "string"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "entidad": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Entidad",
+            "type": "string"
+          },
+          "fecha_fin": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Fin"
+          },
+          "fecha_inicio": {
+            "format": "date",
+            "title": "Fecha Inicio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cargo",
+          "entidad",
+          "fecha_inicio"
+        ],
+        "title": "Experiencia",
+        "type": "object"
+      },
       "FuenteConocimientoOut": {
         "properties": {
           "creado_en": {
@@ -292,6 +748,68 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "IndicadoresFinancieros": {
+        "additionalProperties": false,
+        "description": "Indicadores de capacidad financiera y organizacional de un año fiscal (RUP).",
+        "properties": {
+          "anio": {
+            "maximum": 2100.0,
+            "minimum": 1990.0,
+            "title": "Anio",
+            "type": "integer"
+          },
+          "capital_trabajo_cop": {
+            "title": "Capital Trabajo Cop",
+            "type": "integer"
+          },
+          "indice_endeudamiento": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Indice Endeudamiento",
+            "type": "number"
+          },
+          "indice_liquidez": {
+            "minimum": 0.0,
+            "title": "Indice Liquidez",
+            "type": "number"
+          },
+          "patrimonio_cop": {
+            "title": "Patrimonio Cop",
+            "type": "integer"
+          },
+          "razon_cobertura_intereses": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Razon Cobertura Intereses"
+          },
+          "rentabilidad_activo": {
+            "title": "Rentabilidad Activo",
+            "type": "number"
+          },
+          "rentabilidad_patrimonio": {
+            "title": "Rentabilidad Patrimonio",
+            "type": "number"
+          }
+        },
+        "required": [
+          "anio",
+          "indice_liquidez",
+          "indice_endeudamiento",
+          "capital_trabajo_cop",
+          "patrimonio_cop",
+          "rentabilidad_patrimonio",
+          "rentabilidad_activo"
+        ],
+        "title": "IndicadoresFinancieros",
         "type": "object"
       },
       "InvitacionIn": {
@@ -641,6 +1159,29 @@
         "title": "LicitacionResumen",
         "type": "object"
       },
+      "LimitesDocumentosOut": {
+        "properties": {
+          "max_documentos": {
+            "title": "Max Documentos",
+            "type": "integer"
+          },
+          "max_mb": {
+            "title": "Max Mb",
+            "type": "integer"
+          },
+          "max_paginas": {
+            "title": "Max Paginas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_documentos",
+          "max_paginas",
+          "max_mb"
+        ],
+        "title": "LimitesDocumentosOut",
+        "type": "object"
+      },
       "LimitesOut": {
         "properties": {
           "analisis": {
@@ -835,6 +1376,67 @@
         "title": "OrganizacionIn",
         "type": "object"
       },
+      "Persona": {
+        "additionalProperties": false,
+        "description": "Hoja de vida resumida de una persona del equipo (datos sintéticos, RC-07).",
+        "properties": {
+          "anios_experiencia_general": {
+            "maximum": 70.0,
+            "minimum": 0.0,
+            "title": "Anios Experiencia General",
+            "type": "number"
+          },
+          "certificaciones": {
+            "items": {
+              "maxLength": 300,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Certificaciones",
+            "type": "array"
+          },
+          "experiencias": {
+            "items": {
+              "$ref": "#/components/schemas/Experiencia"
+            },
+            "title": "Experiencias",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "nombre": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Nombre",
+            "type": "string"
+          },
+          "profesion": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Profesion",
+            "type": "string"
+          },
+          "titulos": {
+            "items": {
+              "$ref": "#/components/schemas/Titulo"
+            },
+            "title": "Titulos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "profesion",
+          "anios_experiencia_general"
+        ],
+        "title": "Persona",
+        "type": "object"
+      },
       "PrecisionUbicacion": {
         "description": "Precisión de la ubicación del requisito en el PDF (RF-26, P-21).",
         "enum": [
@@ -857,6 +1459,39 @@
           "pregunta"
         ],
         "title": "PreguntaIn",
+        "type": "object"
+      },
+      "ProcedenciaIn": {
+        "additionalProperties": false,
+        "properties": {
+          "cita": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Cita",
+            "type": "string"
+          },
+          "datos": {
+            "additionalProperties": true,
+            "minProperties": 1,
+            "title": "Datos",
+            "type": "object"
+          },
+          "pagina": {
+            "minimum": 1.0,
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoFuenteConocimiento"
+          }
+        },
+        "required": [
+          "tipo",
+          "pagina",
+          "cita",
+          "datos"
+        ],
+        "title": "ProcedenciaIn",
         "type": "object"
       },
       "ProgresoOut": {
@@ -1475,6 +2110,43 @@
         "title": "TipoTrabajo",
         "type": "string"
       },
+      "Titulo": {
+        "additionalProperties": false,
+        "properties": {
+          "anio": {
+            "maximum": 2100.0,
+            "minimum": 1990.0,
+            "title": "Anio",
+            "type": "integer"
+          },
+          "institucion": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Institucion",
+            "type": "string"
+          },
+          "nivel": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Nivel",
+            "type": "string"
+          },
+          "titulo": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Titulo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nivel",
+          "titulo",
+          "institucion",
+          "anio"
+        ],
+        "title": "Titulo",
+        "type": "object"
+      },
       "TrabajoOut": {
         "properties": {
           "creado_en": {
@@ -1893,6 +2565,712 @@
         "summary": "Cargar",
         "tags": [
           "base de conocimiento"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos": {
+      "get": {
+        "operationId": "listar_api_conocimiento_documentos_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentoResumen"
+                  },
+                  "title": "Response Listar Api Conocimiento Documentos Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "documentos empresariales"
+        ]
+      },
+      "post": {
+        "operationId": "cargar_api_conocimiento_documentos_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_cargar_api_conocimiento_documentos_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cargar",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/base/actual": {
+      "get": {
+        "operationId": "base_actual_api_conocimiento_documentos_base_actual_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Base Actual Api Conocimiento Documentos Base Actual Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Base Actual",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/fuentes/{fuente_id}/pdf-url": {
+      "get": {
+        "operationId": "pdf_fuente_api_conocimiento_documentos_fuentes__fuente_id__pdf_url_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fuente_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fuente Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Pdf Fuente Api Conocimiento Documentos Fuentes  Fuente Id  Pdf Url Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Pdf Fuente",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/limites": {
+      "get": {
+        "operationId": "limites_documentos_api_conocimiento_documentos_limites_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitesDocumentosOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Limites Documentos",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/{identificador}": {
+      "get": {
+        "operationId": "detalle_api_conocimiento_documentos__identificador__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identificador",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identificador",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Detalle",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/{identificador}/aprobar": {
+      "post": {
+        "operationId": "aprobar_api_conocimiento_documentos__identificador__aprobar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identificador",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identificador",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AprobacionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrabajoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Aprobar",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/{identificador}/pdf-url": {
+      "get": {
+        "operationId": "pdf_url_api_conocimiento_documentos__identificador__pdf_url_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identificador",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identificador",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Pdf Url Api Conocimiento Documentos  Identificador  Pdf Url Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Pdf Url",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/{identificador}/rechazar": {
+      "post": {
+        "operationId": "rechazar_api_conocimiento_documentos__identificador__rechazar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identificador",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identificador",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rechazar",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/{identificador}/reintentar": {
+      "post": {
+        "operationId": "reintentar_api_conocimiento_documentos__identificador__reintentar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identificador",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identificador",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrabajoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reintentar",
+        "tags": [
+          "documentos empresariales"
+        ]
+      }
+    },
+    "/api/conocimiento/documentos/{identificador}/retirar": {
+      "post": {
+        "description": "Retira datos de la versión activa; conserva el PDF y la evidencia histórica.",
+        "operationId": "retirar_api_conocimiento_documentos__identificador__retirar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identificador",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identificador",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrabajoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retirar",
+        "tags": [
+          "documentos empresariales"
         ]
       }
     },
@@ -2360,6 +3738,71 @@
           }
         ],
         "summary": "Exportar Matriz",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/indexar-chat": {
+      "post": {
+        "operationId": "indexar_chat_api_licitaciones__licitacion_id__indexar_chat_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrabajoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Indexar Chat",
         "tags": [
           "licitaciones"
         ]

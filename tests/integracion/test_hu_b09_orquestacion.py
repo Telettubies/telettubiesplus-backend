@@ -151,7 +151,8 @@ class _CanalFalso:
     def __init__(self) -> None:
         self.prefetch: int | None = None
 
-    async def set_qos(self, prefetch_count: int) -> None:
+    async def set_qos(self, prefetch_count: int, global_: bool = False) -> None:
+        self.global_ = global_
         self.prefetch = prefetch_count
 
 
@@ -166,7 +167,7 @@ async def test_el_worker_toma_un_solo_mensaje_a_la_vez(monkeypatch: pytest.Monke
 
     await worker.suscribir(canal, grafo_analisis=object())  # type: ignore[arg-type]
 
-    assert canal.prefetch == 1
+    assert canal.prefetch == 1 and canal.global_
     assert all(len(cola.consumidores) == 1 for cola in colas.values())
 
 

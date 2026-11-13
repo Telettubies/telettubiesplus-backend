@@ -19,10 +19,19 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 
 from analizador.core.config import get_settings
+from analizador.db.conocimiento import filtro_version, version_activa
 from analizador.db.session import get_sessionmaker
 from analizador.integrations import nvidia
 from analizador.integrations.anthropic_client import ModeloNoConfiguradoError
-from analizador.models import EmbeddingCache, Fragmento, FuenteConocimiento, TrabajoProcesamiento
+from analizador.models import (
+    CambioConocimiento,
+    DocumentoEmpresa,
+    EmbeddingCache,
+    Fragmento,
+    FuenteConocimiento,
+    Organizacion,
+    TrabajoProcesamiento,
+)
 from analizador.models.enums import OrigenFragmento, TipoFuenteConocimiento
 from analizador.pipeline import progreso
 from analizador.pipeline.errores import AnalisisError
@@ -250,10 +259,61 @@ async def indexar(trabajo: TrabajoProcesamiento) -> None:
         fuentes = list(
             await session.scalars(
                 select(FuenteConocimiento).where(
-                    FuenteConocimiento.organizacion_id == organizacion_id
+                    FuenteConocimiento.organizacion_id == organizacion_id,
+                    filtro_version(await version_activa(session, organizacion_id)),
                 )
             )
         )
+    async with get_sessionmaker()() as session:
+        cambio = await session.scalar(
+            select(CambioConocimiento).where(CambioConocimiento.trabajo_id == trabajo.id)
+        )
+    if cambio is not None and cambio.estado in {"activado", "historico"}:
+        return
+    if cambio is not None:
+        from analizador.contratos.conocimiento import BaseConocimiento
+        from analizador.db.conocimiento import crear_fuentes
+
+        fuentes = crear_fuentes(BaseConocimiento.model_validate(cambio.datos), organizacion_id)
+        async with get_sessionmaker()() as session:
+            previas = list(
+                await session.scalars(
+                    select(FuenteConocimiento).where(
+                        FuenteConocimiento.organizacion_id == organizacion_id,
+                        filtro_version(await version_activa(session, organizacion_id)),
+                    )
+                )
+            )
+        for fuente in fuentes:
+            fuente.id = uuid.uuid4()
+            for previa in previas:
+                limpia = {k: v for k, v in (previa.datos or {}).items() if not k.startswith("_")}
+                if previa.tipo == fuente.tipo and limpia == fuente.datos:
+                    fuente.datos = {
+                        **(fuente.datos or {}),
+                        **{k: v for k, v in (previa.datos or {}).items() if k.startswith("_")},
+                    }
+                    fuente.storage_key = previa.storage_key
+            for procedencia in cambio.procedencia:
+                if procedencia.get("tipo") == fuente.tipo.value and all(
+                    (fuente.datos or {}).get(k) == v
+                    for k, v in procedencia.get("datos", {}).items()
+                ):
+                    documento = None
+                    async with get_sessionmaker()() as session:
+                        documento = (
+                            await session.get(DocumentoEmpresa, cambio.documento_id)
+                            if cambio.documento_id
+                            else None
+                        )
+                    if documento:
+                        fuente.storage_key = documento.storage_key
+                        fuente.datos = {
+                            **(fuente.datos or {}),
+                            "_documento_id": str(documento.id),
+                            "_pagina": procedencia["pagina"],
+                            "_cita": procedencia["cita"],
+                        }
     pendientes = [
         FragmentoPendiente(fuente.id, texto)
         for fuente in fuentes
@@ -271,22 +331,76 @@ async def indexar(trabajo: TrabajoProcesamiento) -> None:
         ) from exc
 
     async with get_sessionmaker()() as session:
+        await session.scalar(
+            select(Organizacion).where(Organizacion.id == organizacion_id).with_for_update()
+        )
         vigentes = set(
             await session.scalars(
                 select(FuenteConocimiento.id)
-                .where(FuenteConocimiento.organizacion_id == organizacion_id)
+                .where(
+                    FuenteConocimiento.organizacion_id == organizacion_id,
+                    filtro_version(await version_activa(session, organizacion_id)),
+                )
                 .with_for_update()
             )
         )
-        if vigentes != {fuente.id for fuente in fuentes}:
+        esperadas = (
+            set(cambio.fuentes_anteriores) if cambio is not None else {str(f.id) for f in fuentes}
+        )
+        ultimo = await session.scalar(
+            select(CambioConocimiento.id)
+            .where(CambioConocimiento.organizacion_id == organizacion_id)
+            .order_by(CambioConocimiento.secuencia.desc())
+            .limit(1)
+        )
+        if {str(i) for i in vigentes} != esperadas or (cambio is not None and ultimo != cambio.id):
+            if cambio is not None:
+                obsoleto = await session.get(CambioConocimiento, cambio.id)
+                if obsoleto:
+                    obsoleto.estado = "obsoleto"
+                if cambio.documento_id:
+                    documento = await session.get(DocumentoEmpresa, cambio.documento_id)
+                    if documento:
+                        documento.estado = (
+                            "aprobado"
+                            if any(p.get("operacion") == "retiro" for p in cambio.procedencia)
+                            else "revision"
+                        )
+                await session.commit()
             raise AnalisisError(
                 "La base de conocimiento cambió durante la indexación. "
                 "Se indexará la versión nueva."
             )
+        if cambio is not None:
+            for fuente in fuentes:
+                fuente.datos = {**(fuente.datos or {}), "_revision": str(cambio.id)}
+            anteriores = await session.scalars(
+                select(CambioConocimiento).where(
+                    CambioConocimiento.organizacion_id == organizacion_id,
+                    CambioConocimiento.estado == "activado",
+                )
+            )
+            for anterior in anteriores:
+                anterior.estado = "historico"
+            session.add_all(fuentes)
+            await session.flush()
+            guardado = await session.get(CambioConocimiento, cambio.id)
+            if guardado is None:
+                raise RuntimeError("Registro de procesamiento no encontrado")
+            guardado.estado = "activado"
+            if cambio.documento_id:
+                documento = await session.get(DocumentoEmpresa, cambio.documento_id)
+                if documento:
+                    documento.estado = (
+                        "retirado"
+                        if any(p.get("operacion") == "retiro" for p in cambio.procedencia)
+                        else "aprobado"
+                    )
         await session.execute(
             delete(Fragmento).where(
                 Fragmento.organizacion_id == organizacion_id,
                 Fragmento.origen == OrigenFragmento.EMPRESA,
+                Fragmento.fuente_conocimiento_id.in_([f.id for f in fuentes]),
             )
         )
         session.add_all(
@@ -298,6 +412,12 @@ async def indexar(trabajo: TrabajoProcesamiento) -> None:
                 hash_texto=p.hash,
                 modelo_embedding=modelo,
                 embedding=vectores[p.hash],
+                pagina=next((f.datos or {}).get("_pagina") for f in fuentes if f.id == p.fuente_id),
+                metadatos=next(
+                    {k: v for k, v in (f.datos or {}).items() if k.startswith("_")}
+                    for f in fuentes
+                    if f.id == p.fuente_id
+                ),
             )
             for p in pendientes
         )

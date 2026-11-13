@@ -114,6 +114,7 @@ async def ejecutar(estado: EstadoAnalisis) -> None:
     if not pendientes:
         return
     if modelo and existentes == len(pendientes):
+        await progreso.anotar_detalle(trabajo_id, chat={"indexado": True, "fragmentos": existentes})
         return
     try:
         if not modelo:

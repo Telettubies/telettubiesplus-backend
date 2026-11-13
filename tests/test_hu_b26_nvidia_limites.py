@@ -220,8 +220,9 @@ async def test_los_embeddings_pasan_por_el_limite_y_los_reintentos(
             if fallos:
                 raise fallos.pop()
 
-            dato = SimpleNamespace(embedding=[0.1, 0.2])
-            return SimpleNamespace(data=[dato, dato])
+            return SimpleNamespace(
+                data=[SimpleNamespace(index=i, embedding=[0.1, 0.2]) for i in range(2)]
+            )
 
     class _Cliente:
         embeddings = _Embeddings()
