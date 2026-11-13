@@ -1,0 +1,316 @@
+{
+  "empresa": {
+    "razon_social": "Gestión Documental Inteligente S.A.S.",
+    "nit": "901333444-7",
+    "ciudad": "Cali, Valle del Cauca",
+    "representante_legal": "Carolina Mejía Arboleda"
+  },
+  "financiero": [
+    {
+      "anio": 2025,
+      "indice_liquidez": 2.0977,
+      "indice_endeudamiento": 0.4101,
+      "razon_cobertura_intereses": 7.8049,
+      "capital_trabajo_cop": 1910000000,
+      "patrimonio_cop": 4070000000,
+      "rentabilidad_patrimonio": 0.1572,
+      "rentabilidad_activo": 0.0928
+    }
+  ],
+  "contratos": [
+    {
+      "id": "GDI-2022-003",
+      "objeto": "Desarrollo, implementación y migración de un Sistema de Gestión de Documentos Electrónicos de Archivo (SGDEA) con radicación, TRD y firma digital.",
+      "entidad_contratante": "Gobernación del Valle del Cauca (pública)",
+      "fecha_inicio": "2022-02-01",
+      "fecha_fin": "2023-07-31",
+      "valor_cop": 1200000000,
+      "valor_smmlv": 1200.0,
+      "codigos_unspsc": [
+        "81111500",
+        "81112200",
+        "43232300"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Documentos migrados: 1.350.000. Migración de 1.350.000 documentos con integridad del 99,8 %."
+    },
+    {
+      "id": "GDI-2023-017",
+      "objeto": "Desarrollo e implementación de un sistema de información de gestión de expedientes y flujos de trabajo documentales.",
+      "entidad_contratante": "Seguros del Pacífico S.A. (privada)",
+      "fecha_inicio": "2023-03-01",
+      "fecha_fin": "2024-02-29",
+      "valor_cop": 870000000,
+      "valor_smmlv": 750.0,
+      "codigos_unspsc": [
+        "81111500",
+        "81112200"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Integración por API REST con el núcleo de seguros."
+    },
+    {
+      "id": "GDI-2024-009",
+      "objeto": "Soporte, mantenimiento evolutivo y mesa de ayuda del sistema de gestión documental institucional.",
+      "entidad_contratante": "Universidad del Pacífico (pública)",
+      "fecha_inicio": "2024-05-01",
+      "fecha_fin": "2025-04-30",
+      "valor_cop": 455000000,
+      "valor_smmlv": 350.0,
+      "codigos_unspsc": [
+        "81112200",
+        "43232300"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Mesa de ayuda en horario hábil durante 12 meses."
+    },
+    {
+      "id": "GDI-2025-002",
+      "objeto": "Implementación del módulo de ventanilla única y radicación electrónica del sistema de gestión documental.",
+      "entidad_contratante": "Alcaldía de Buenaventura (pública)",
+      "fecha_inicio": "2025-02-01",
+      "fecha_fin": "2025-12-15",
+      "valor_cop": 427050000,
+      "valor_smmlv": 300.0,
+      "codigos_unspsc": [
+        "81111500",
+        "81112200"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Contrato adicional para el factor de experiencia adicional."
+    },
+    {
+      "id": "GDI-2021-006",
+      "objeto": "Desarrollo e implementación de un sistema de información para la gestión de archivos técnicos.",
+      "entidad_contratante": "Empresas Municipales de Tuluá E.S.P. (pública)",
+      "fecha_inicio": "2021-04-01",
+      "fecha_fin": "2022-03-31",
+      "valor_cop": 363410400,
+      "valor_smmlv": 400.0,
+      "codigos_unspsc": [
+        "81111500",
+        "43232300"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Contrato adicional para el factor de experiencia adicional."
+    }
+  ],
+  "personas": [
+    {
+      "id": "P-GDI-01",
+      "nombre": "Ricardo Alberto Henao Salazar",
+      "profesion": "Ingeniero de sistemas",
+      "anios_experiencia_general": 16,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Ingeniería de Sistemas",
+          "institucion": "Universidad del Valle",
+          "anio": 2010
+        },
+        {
+          "nivel": "maestría",
+          "titulo": "Maestría en Gestión de Proyectos",
+          "institucion": "Universidad ICESI",
+          "anio": 2015
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Director de proyectos de TI",
+          "entidad": "Gestión Documental Inteligente S.A.S.",
+          "fecha_inicio": "2017-02-01",
+          "fecha_fin": null,
+          "descripcion": "Dirección de proyectos de sistemas de información y SGDEA para entidades públicas."
+        },
+        {
+          "cargo": "Ingeniero de desarrollo",
+          "entidad": "Software Occidente Ltda.",
+          "fecha_inicio": "2010-08-01",
+          "fecha_fin": "2017-01-31",
+          "descripcion": "Desarrollo de aplicaciones web."
+        }
+      ],
+      "certificaciones": [
+        "PMP – Project Management Professional (PMI, vigente hasta 2028-03-31)",
+        "ITIL 4 Foundation (PeopleCert, 2019)"
+      ]
+    },
+    {
+      "id": "P-GDI-02",
+      "nombre": "Natalia Gómez Restrepo",
+      "profesion": "Ingeniera de sistemas",
+      "anios_experiencia_general": 13,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Ingeniería de Sistemas",
+          "institucion": "Pontificia Universidad Javeriana Cali",
+          "anio": 2013
+        },
+        {
+          "nivel": "especialización",
+          "titulo": "Especialización en Ingeniería de Software",
+          "institucion": "Universidad Autónoma de Occidente",
+          "anio": 2016
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Líder de aseguramiento de calidad de software",
+          "entidad": "Gestión Documental Inteligente S.A.S.",
+          "fecha_inicio": "2018-03-01",
+          "fecha_fin": null,
+          "descripcion": "Planeación y ejecución de pruebas funcionales, de carga y de seguridad."
+        },
+        {
+          "cargo": "Analista de pruebas",
+          "entidad": "Bancoop Tecnología S.A.",
+          "fecha_inicio": "2013-09-01",
+          "fecha_fin": "2018-02-28",
+          "descripcion": "Pruebas funcionales y automatizadas."
+        }
+      ],
+      "certificaciones": [
+        "Auditor interno ISO 9001:2015 (ICONTEC, 2021)",
+        "ISTQB Certified Tester Foundation Level (2017)"
+      ]
+    },
+    {
+      "id": "P-GDI-03",
+      "nombre": "Julián David Caicedo Ramos",
+      "profesion": "Ingeniero de sistemas",
+      "anios_experiencia_general": 13,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Ingeniería de Sistemas",
+          "institucion": "Universidad del Cauca",
+          "anio": 2012
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Arquitecto de software",
+          "entidad": "Gestión Documental Inteligente S.A.S.",
+          "fecha_inicio": "2016-06-01",
+          "fecha_fin": null,
+          "descripcion": "Diseño de arquitecturas web, microservicios y despliegues en nube."
+        },
+        {
+          "cargo": "Desarrollador senior",
+          "entidad": "Nube Pacífico S.A.S.",
+          "fecha_inicio": "2013-01-15",
+          "fecha_fin": "2016-05-31",
+          "descripcion": "Desarrollo backend y APIs REST."
+        }
+      ],
+      "certificaciones": [
+        "AWS Certified Solutions Architect – Professional (vigente hasta 2027-08-15)"
+      ]
+    },
+    {
+      "id": "P-GDI-04",
+      "nombre": "Paola Andrea Mosquera Valencia",
+      "profesion": "Profesional en archivística",
+      "anios_experiencia_general": 12,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Archivística",
+          "institucion": "Universidad del Quindío",
+          "anio": 2014
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Especialista en gestión documental",
+          "entidad": "Gestión Documental Inteligente S.A.S.",
+          "fecha_inicio": "2019-01-10",
+          "fecha_fin": null,
+          "descripcion": "Elaboración e implementación de TRD y parametrización de SGDEA."
+        },
+        {
+          "cargo": "Archivista",
+          "entidad": "Archivo General del Valle",
+          "fecha_inicio": "2014-08-01",
+          "fecha_fin": "2018-12-31",
+          "descripcion": "Organización de fondos documentales."
+        }
+      ],
+      "certificaciones": []
+    }
+  ],
+  "certificaciones": [
+    {
+      "nombre": "ISO 9001:2015",
+      "entidad_emisora": "Bureau Certificador Andino (acreditado ONAC)",
+      "fecha_expedicion": "2025-10-01",
+      "fecha_vencimiento": "2028-09-30",
+      "alcance": "Diseño, desarrollo, implementación, migración y soporte de software y sistemas de gestión documental."
+    },
+    {
+      "nombre": "ISO/IEC 27001:2022",
+      "entidad_emisora": "Bureau Certificador Andino (acreditado ONAC)",
+      "fecha_expedicion": "2025-05-20",
+      "fecha_vencimiento": "2028-05-19",
+      "alcance": "Seguridad de la información en los servicios de desarrollo de software, soporte y alojamiento de soluciones documentales."
+    },
+    {
+      "nombre": "ISO/IEC 20000-1:2018",
+      "entidad_emisora": "Certificación Global de Servicios TI",
+      "fecha_expedicion": "2024-12-10",
+      "fecha_vencimiento": "2027-12-09",
+      "alcance": "Gestión de servicios de soporte y mesa de ayuda de aplicaciones."
+    },
+    {
+      "nombre": "CMMI-DEV nivel de madurez 3",
+      "entidad_emisora": "CMMI Institute (appraisal SCAMPI A)",
+      "fecha_expedicion": "2025-06-15",
+      "fecha_vencimiento": "2028-06-15",
+      "alcance": "Desarrollo de software a la medida y de sistemas de gestión documental."
+    }
+  ],
+  "capacidades": [
+    {
+      "nombre": "Equipo de desarrollo propio",
+      "descripcion": "Certificación del representante legal: planta de 32 ingenieros de desarrollo vinculados con contrato laboral a término indefinido."
+    },
+    {
+      "nombre": "Alojamiento en nube en Colombia",
+      "descripcion": "Infraestructura en centros de datos ubicados en Bogotá y Medellín con disponibilidad histórica del 99,9 %."
+    },
+    {
+      "nombre": "Firma electrónica y digital",
+      "descripcion": "Integración con entidades de certificación abiertas acreditadas por ONAC."
+    },
+    {
+      "nombre": "Apoyo a la industria nacional",
+      "descripcion": "Servicios prestados en su totalidad por personal colombiano (Ley 816 de 2003)."
+    },
+    {
+      "nombre": "Vinculación de personas con discapacidad",
+      "descripcion": "4 trabajadores con discapacidad certificados por el Ministerio del Trabajo."
+    },
+    {
+      "nombre": "Pruebas de carga",
+      "descripcion": "Pruebas con 1.000 usuarios concurrentes realizadas en 2025 sin degradación superior al 12 %."
+    },
+    {
+      "nombre": "Duración de la sociedad",
+      "descripcion": "Constituida el 2010-05-18; duración hasta el 2060-05-18. Certificado de existencia expedido el 2026-11-10."
+    },
+    {
+      "nombre": "Registro Único de Proponentes",
+      "descripcion": "Vigente y en firme; códigos UNSPSC: 81111500, 81112200, 43232300, 81111800."
+    },
+    {
+      "nombre": "Garantía de seriedad de la oferta",
+      "descripcion": "$315.000.000, vigencia 2026-11-30 a 2027-03-30 (4 meses)."
+    },
+    {
+      "nombre": "Seguridad social y parafiscales",
+      "descripcion": "Al día; certificación firmada por: Revisor fiscal Hernando Ospina Valencia, T.P. 77310-T."
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "empresa": {
+    "razon_social": "TecnoAyuda Express S.A.S.",
+    "nit": "901987654-1",
+    "ciudad": "Girardot, Cundinamarca",
+    "representante_legal": "Felipe Andrés Mora Quintana"
+  },
+  "financiero": [
+    {
+      "anio": 2025,
+      "indice_liquidez": 1.4222,
+      "indice_endeudamiento": 0.78,
+      "razon_cobertura_intereses": 1.871,
+      "capital_trabajo_cop": 190000000,
+      "patrimonio_cop": 253000000,
+      "rentabilidad_patrimonio": 0.2292,
+      "rentabilidad_activo": 0.0504
+    }
+  ],
+  "contratos": [
+    {
+      "id": "TA-2022-004",
+      "objeto": "Soporte técnico y mantenimiento correctivo de equipos de cómputo.",
+      "entidad_contratante": "Clínica Nuestra Señora del Prado S.A. (privada)",
+      "fecha_inicio": "2022-04-01",
+      "fecha_fin": "2023-03-31",
+      "valor_cop": 380000000,
+      "valor_smmlv": 380.0,
+      "codigos_unspsc": [
+        "81111800"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Cumplimiento de ANS: 91,0 %. Atención de 1.200 tiquetes mensuales en horario hábil."
+    },
+    {
+      "id": "TA-2020-002",
+      "objeto": "Mesa de ayuda y soporte técnico a la plataforma tecnológica municipal.",
+      "entidad_contratante": "Alcaldía de Agua de Dios (pública)",
+      "fecha_inicio": "2020-01-15",
+      "fecha_fin": "2021-01-14",
+      "valor_cop": 470000000,
+      "valor_smmlv": null,
+      "codigos_unspsc": [
+        "81111800"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Cumplimiento de ANS: 96,0 %. Contrato terminado hace más de cinco años respecto del cierre."
+    }
+  ],
+  "personas": [
+    {
+      "id": "P-TA-01",
+      "nombre": "Kevin Alexander Rubio Osorio",
+      "profesion": "Tecnólogo en sistemas",
+      "anios_experiencia_general": 3,
+      "titulos": [
+        {
+          "nivel": "tecnología",
+          "titulo": "Tecnología en Sistemas",
+          "institucion": "Instituto Técnico del Alto Magdalena",
+          "anio": 2022
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Técnico de soporte",
+          "entidad": "TecnoAyuda Express S.A.S.",
+          "fecha_inicio": "2023-01-10",
+          "fecha_fin": null,
+          "descripcion": "Soporte en sitio a usuarios finales."
+        }
+      ],
+      "certificaciones": []
+    }
+  ],
+  "certificaciones": [
+    {
+      "nombre": "ISO 9001:2015",
+      "entidad_emisora": "Certificadora Regional de Calidad",
+      "fecha_expedicion": "2023-09-01",
+      "fecha_vencimiento": "2026-08-31",
+      "alcance": "Comercialización de equipos de cómputo y periféricos."
+    }
+  ],
+  "capacidades": [
+    {
+      "nombre": "Personal técnico de soporte",
+      "descripcion": "Planta de 5 técnicos de soporte en horario hábil."
+    },
+    {
+      "nombre": "Duración de la sociedad",
+      "descripcion": "Constituida el 2019-07-02; duración hasta el 2027-07-02. Certificado de existencia expedido el 2026-09-15."
+    },
+    {
+      "nombre": "Registro Único de Proponentes",
+      "descripcion": "Vigente y en firme; códigos UNSPSC: 43211500, 81111800."
+    },
+    {
+      "nombre": "Garantía de seriedad de la oferta",
+      "descripcion": "No se aporta póliza de seriedad."
+    },
+    {
+      "nombre": "Seguridad social y parafiscales",
+      "descripcion": "Al día; certificación firmada por: Representante legal (la sociedad no está obligada a tener revisor fiscal)."
+    }
+  ]
+}
