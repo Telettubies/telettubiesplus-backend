@@ -89,3 +89,10 @@ disponibilidad actual de los modelos externos.
 El frontend incluye pruebas de carga, permisos y combinación de registros, además
 de la comprobación del contrato OpenAPI y de tipos. La compilación mantiene el aviso
 existente sobre tamaño de algunos bundles.
+
+
+### Indexacion automatica de PDF
+
+Los trabajos de documento intentan publicar e indexar los candidatos despues de extraerlos, si la base combinada supera el contrato BaseConocimiento. No se rellenan datos obligatorios ausentes. Los documentos incompletos permanecen en revision y conservan la aprobacion manual. Los documentos en revision pueden volver a encolarse mediante POST /api/conocimiento/documentos/{id}/reintentar. Las publicaciones automaticas se serializan por organizacion; un fallo de embeddings conserva la base anterior. La publicacion automatica no registra un aprobador humano.
+
+Cambio solicitado sin ejecutar pruebas; pendiente validacion antes de produccion.
