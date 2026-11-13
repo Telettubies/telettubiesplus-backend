@@ -1838,9 +1838,25 @@
     },
     "/api/licitaciones": {
       "get": {
-        "description": "Panel general de licitaciones de la organización (RF-11, RF-12).",
+        "description": "Panel de licitaciones de la organización con estado y recomendación (RF-11, HU-B22).",
         "operationId": "listar_api_licitaciones_get",
         "parameters": [
+          {
+            "description": "Orden por fecha de carga: primero las más recientes o las más antiguas",
+            "in": "query",
+            "name": "orden",
+            "required": false,
+            "schema": {
+              "default": "recientes",
+              "description": "Orden por fecha de carga: primero las más recientes o las más antiguas",
+              "enum": [
+                "recientes",
+                "antiguas"
+              ],
+              "title": "Orden",
+              "type": "string"
+            }
+          },
           {
             "in": "header",
             "name": "x-organizacion-id",

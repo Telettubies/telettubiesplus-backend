@@ -3,9 +3,9 @@
 import hashlib
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -239,12 +239,20 @@ async def cargar_pliego(
 
 
 @router.get("", response_model=list[LicitacionResumen])
-async def listar(contexto: ContextoDep, session: SessionDep) -> list[Licitacion]:
-    """Panel general de licitaciones de la organización (RF-11, RF-12)."""
+async def listar(
+    contexto: ContextoDep,
+    session: SessionDep,
+    orden: Annotated[
+        Literal["recientes", "antiguas"],
+        Query(description="Orden por fecha de carga: primero las más recientes o las más antiguas"),
+    ] = "recientes",
+) -> list[Licitacion]:
+    """Panel de licitaciones de la organización con estado y recomendación (RF-11, HU-B22)."""
+    fecha = Licitacion.creado_en.desc() if orden == "recientes" else Licitacion.creado_en.asc()
     resultado = await session.scalars(
         select(Licitacion)
         .where(Licitacion.organizacion_id == contexto.organizacion_id)
-        .order_by(Licitacion.creado_en.desc())
+        .order_by(fecha, Licitacion.id)
     )
     return list(resultado)
 
