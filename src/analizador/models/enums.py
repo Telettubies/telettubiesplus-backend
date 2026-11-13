@@ -125,3 +125,21 @@ class TipoVerificacion(StrEnum):
 
     NUMERICO = "numerico"  # por código, contra un dato estructurado de la empresa
     CUALITATIVO = "cualitativo"  # lo valora el modelo contra la evidencia recuperada
+
+
+class TipoExigibilidad(StrEnum):
+    """Momento en que el pliego exige la condición: decide si se verifica contra la base.
+
+    Solo `historico_empresa` se puede acreditar con la base de conocimiento (lo que la empresa
+    ya es o ya hizo). Las demás no dependen del pasado de la empresa: pasan a la lista de
+    chequeo operativa en vez de evaluarse como cumplimiento.
+    """
+
+    # Experiencia, indicadores, certificaciones, perfiles del equipo, capacidades.
+    HISTORICO_EMPRESA = "historico_empresa"
+    # Documentos o formatos que se preparan para esta oferta (carta, garantía, anexos).
+    DOCUMENTO_OFERTA = "documento_oferta"
+    # Obligaciones durante la ejecución del contrato (facturar, entregar, mantener personal).
+    COMPROMISO_EJECUCION = "compromiso_ejecucion"
+    # Fechas y actuaciones del cronograma del proceso (subsanar, observar, audiencias).
+    HITO_CRONOGRAMA = "hito_cronograma"

@@ -26,6 +26,7 @@ from analizador.contratos.extraccion import (
     ExtraccionSeccion,
     ItemExtraido,
     RequisitoExtraido,
+    TipoExigibilidad,
     TipoVerificacion,
 )
 from analizador.core.config import get_settings
@@ -77,6 +78,33 @@ resuelvas la ambigüedad suponiendo: márcala.
 - items: un ítem por cada condición que se pueda verificar por separado. Un requisito con \
 varias condiciones ("experiencia mínima de 5 años y al menos 3 contratos de consultoría") se \
 divide en un ítem por condición. Cada descripcion debe entenderse sin leer las demás.
+
+Cada ítem lleva tipo_exigibilidad, según el momento en que el pliego lo exige. Solo los \
+históricos se verifican después contra la base de conocimiento de la empresa; los demás van \
+a una lista de chequeo operativa, así que clasificarlos mal produce falsos incumplimientos:
+
+- historico_empresa: algo que la empresa ya es, ya tiene o ya hizo y que se acredita con su \
+historial: experiencia y contratos ejecutados, indicadores financieros, inscripción en el \
+RUP, certificaciones vigentes, perfiles, títulos y experiencia del equipo propuesto, \
+capacidades técnicas instaladas.
+- documento_oferta: un documento, formato o anexo que se prepara para esta oferta y que \
+cualquier proponente puede producir al presentarse: carta de presentación, garantía de \
+seriedad, compromiso anticorrupción, propuesta económica, formatos del pliego, \
+certificaciones de pago de parafiscales o declaraciones juramentadas.
+- compromiso_ejecucion: una obligación que se cumple durante la ejecución del contrato si \
+se adjudica: radicar facturas, entregar informes, mantener el personal, cumplir \
+cronogramas de trabajo, constituir la garantía de cumplimiento.
+- hito_cronograma: una fecha o actuación del cronograma del proceso de selección: \
+presentar observaciones, subsanar, asistir a audiencias, plazos de entrega de la oferta.
+
+Ante la duda entre historico_empresa y otro tipo, elige historico_empresa. Una condición \
+del tipo «el proponente debe acreditar experiencia en…» es histórica aunque se presente \
+con un formato del pliego.
+
+Cuando el pliego limita cuántos contratos se pueden presentar para acreditar experiencia \
+(«máximo dos contratos», «hasta tres certificaciones»), extrae ese límite como un ítem \
+experiencia_contratos con operador <=. Es un tope de lo que se presenta, no una exigencia \
+sobre el historial: la empresa elegirá cuáles presentar.
 
 Cada ítem lleva tipo_verificacion:
 
@@ -132,7 +160,11 @@ def _documento(seccion: SeccionPendiente, nota: str | None = None) -> str:
 
 
 def _normalizar_item(item: ItemExtraido) -> ItemExtraido:
-    """Un ítem numérico sin parámetros utilizables se verifica como cualitativo."""
+    """Un ítem numérico sin parámetros utilizables se verifica como cualitativo.
+
+    Un ítem numérico compara datos de la empresa: siempre es histórico, diga lo que diga el
+    modelo sobre su exigibilidad.
+    """
     if item.tipo_verificacion != TipoVerificacion.NUMERICO:
         return item.model_copy(update={"parametros": None})
     parametros = item.parametros
@@ -142,7 +174,7 @@ def _normalizar_item(item: ItemExtraido) -> ItemExtraido:
         else parametros.valor is not None
     )
     if utilizable:
-        return item
+        return item.model_copy(update={"tipo_exigibilidad": TipoExigibilidad.HISTORICO_EMPRESA})
     return item.model_copy(
         update={"tipo_verificacion": TipoVerificacion.CUALITATIVO, "parametros": None}
     )
@@ -159,7 +191,11 @@ def normalizar(extraccion: ExtraccionSeccion) -> list[RequisitoExtraido]:
         if not items:
             # Sin desagregar: el requisito completo es su único ítem verificable.
             items = [
-                ItemExtraido(descripcion=literal, tipo_verificacion=TipoVerificacion.CUALITATIVO)
+                ItemExtraido(
+                    descripcion=literal,
+                    tipo_exigibilidad=TipoExigibilidad.HISTORICO_EMPRESA,
+                    tipo_verificacion=TipoVerificacion.CUALITATIVO,
+                )
             ]
         motivo = (requisito.motivo_ambiguedad or "").strip() or None
         requisitos.append(
@@ -225,6 +261,7 @@ async def _guardar(seccion: SeccionPendiente, requisitos: list[RequisitoExtraido
                 Item(
                     orden=orden,
                     descripcion=item.descripcion.strip(),
+                    exigibilidad=item.tipo_exigibilidad,
                     tipo_verificacion=item.tipo_verificacion,
                     parametros=item.parametros.model_dump(mode="json") if item.parametros else None,
                 )
