@@ -40,15 +40,32 @@ class MiembroOut(_Orm):
     creado_en: datetime
 
 
+class MembresiaOut(MiembroOut):
+    """Membresía con el nombre de su organización, para mostrarlo en la interfaz."""
+
+    organizacion_nombre: str
+
+
 class YoOut(BaseModel):
     usuario_id: uuid.UUID
     email: str | None
-    membresias: list[MiembroOut]
+    membresias: list[MembresiaOut]
 
 
 class InvitacionIn(BaseModel):
     email: EmailStr
     rol: Rol = Rol.REVISOR
+
+
+class OrganizacionIn(BaseModel):
+    """Alta de la organización propia: solo el nombre (organizaciones.nombre)."""
+
+    nombre: str = Field(min_length=2, max_length=200)
+
+    @field_validator("nombre", mode="before")
+    @classmethod
+    def _recortar(cls, valor: object) -> object:
+        return valor.strip() if isinstance(valor, str) else valor
 
 
 class CambioRolIn(BaseModel):

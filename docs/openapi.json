@@ -677,6 +677,58 @@
         "title": "LimitesOut",
         "type": "object"
       },
+      "MembresiaOut": {
+        "description": "Membresía con el nombre de su organización, para mostrarlo en la interfaz.",
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invitacion_pendiente": {
+            "title": "Invitacion Pendiente",
+            "type": "boolean"
+          },
+          "organizacion_id": {
+            "format": "uuid",
+            "title": "Organizacion Id",
+            "type": "string"
+          },
+          "organizacion_nombre": {
+            "title": "Organizacion Nombre",
+            "type": "string"
+          },
+          "rol": {
+            "$ref": "#/components/schemas/Rol"
+          },
+          "usuario_id": {
+            "format": "uuid",
+            "title": "Usuario Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organizacion_id",
+          "usuario_id",
+          "email",
+          "rol",
+          "invitacion_pendiente",
+          "creado_en",
+          "organizacion_nombre"
+        ],
+        "title": "MembresiaOut",
+        "type": "object"
+      },
       "MiembroOut": {
         "properties": {
           "creado_en": {
@@ -765,6 +817,22 @@
           "texto"
         ],
         "title": "ObservacionOut",
+        "type": "object"
+      },
+      "OrganizacionIn": {
+        "description": "Alta de la organización propia: solo el nombre (organizaciones.nombre).",
+        "properties": {
+          "nombre": {
+            "maxLength": 200,
+            "minLength": 2,
+            "title": "Nombre",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nombre"
+        ],
+        "title": "OrganizacionIn",
         "type": "object"
       },
       "PrecisionUbicacion": {
@@ -1642,7 +1710,7 @@
           },
           "membresias": {
             "items": {
-              "$ref": "#/components/schemas/MiembroOut"
+              "$ref": "#/components/schemas/MembresiaOut"
             },
             "title": "Membresias",
             "type": "array"
@@ -3048,6 +3116,52 @@
         "summary": "Cambiar Rol",
         "tags": [
           "miembros"
+        ]
+      }
+    },
+    "/api/organizaciones": {
+      "post": {
+        "operationId": "crear_api_organizaciones_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizacionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MiembroOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Crear",
+        "tags": [
+          "organizaciones"
         ]
       }
     },
