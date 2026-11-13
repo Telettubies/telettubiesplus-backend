@@ -2235,6 +2235,68 @@
         ]
       }
     },
+    "/api/licitaciones/{licitacion_id}/exportar": {
+      "get": {
+        "description": "Descarga la matriz en Excel: una fila por ítem y una hoja de resumen (HU-B29).",
+        "operationId": "exportar_matriz_api_licitaciones__licitacion_id__exportar_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "Matriz en Excel"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Exportar Matriz",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
     "/api/licitaciones/{licitacion_id}/observaciones": {
       "post": {
         "description": "Borrador de observación para un requisito ambiguo; no se envía a la entidad (HU-B25).",

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from analizador.api import chat as chat_licitacion
-from analizador.api import cuotas, matriz
+from analizador.api import cuotas, exportacion, matriz
 from analizador.api import observaciones as borradores
 from analizador.api.deps import ContextoDep, PublicadorDep, SessionDep
 from analizador.contratos.decision import Recomendacion
@@ -375,6 +375,45 @@ async def resultado_matriz(
         Recomendacion(licitacion.recomendacion),
         licitacion.justificacion,
         url,
+    )
+
+
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@router.get(
+    "/{licitacion_id}/exportar",
+    response_class=Response,
+    responses={200: {"content": {XLSX: {}}, "description": "Matriz en Excel"}},
+)
+async def exportar_matriz(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep
+) -> Response:
+    """Descarga la matriz en Excel: una fila por ítem y una hoja de resumen (HU-B29)."""
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    if (
+        licitacion.estado != EstadoLicitacion.COMPLETADA
+        or licitacion.recomendacion not in tuple(Recomendacion)
+        or not licitacion.justificacion
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "La matriz se puede exportar cuando el análisis termine."
+        )
+    items = await matriz.items_de(session, licitacion, contexto.organizacion_id)
+    contenido = exportacion.libro(
+        licitacion.titulo,
+        Recomendacion(licitacion.recomendacion),
+        licitacion.justificacion,
+        items,
+    )
+    return Response(
+        content=contenido,
+        media_type=XLSX,
+        headers={
+            # El nombre no usa el título: así ningún dato del usuario llega a la cabecera.
+            "Content-Disposition": f'attachment; filename="matriz-{licitacion.id}.xlsx"',
+            "Cache-Control": "no-store",
+        },
     )
 
 
