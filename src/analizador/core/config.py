@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     log_level: str = "INFO"
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    # Publica Swagger (/docs) y /openapi.json también en producción. Fuera de producción
+    # siempre están activos. Apagado por defecto: el contrato revela la superficie de la API.
+    exponer_docs: bool = False
 
     # --- PostgreSQL (C-05) ---
     database_url: SecretStr
