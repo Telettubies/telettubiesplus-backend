@@ -67,8 +67,9 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 24 | HU-B02 | Invitar un usuario a la organización | hecha | laqg | f91e973, 4b5e190 | |
 | 25 | HU-B03 | Gestionar miembros y roles | hecha | laqg | 9b4479a, 3f60c1b | |
 | 26 | HU-B22 | Listar las licitaciones de la organización | hecha | laqg | ed22d5c, 162f92a | |
+| 27 | HU-B23 | Registrar la revisión humana y recalcular | hecha | laqg | fcd19bb, d5c9811 | |
 
-Fuera de este plan: HU-B23, B24, B25 (Should) y HU-B28, B29 (Could). Las Should y Could que se
+Fuera de este plan: HU-B24, B25 (Should) y HU-B28, B29 (Could). Las Should y Could que se
 implementan se añaden a la tabla con su número de orden.
 
 Dependencias que fijan el orden: HU-B01 antes de todo lo protegido; T-01 antes de HU-B04 y
