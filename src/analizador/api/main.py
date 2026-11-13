@@ -14,6 +14,7 @@ from analizador.api.routers import (
     licitaciones,
     limites,
     miembros,
+    organizaciones,
     resultados,
     yo,
 )
@@ -39,14 +40,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    docs_activos = settings.app_env != "production" or settings.exponer_docs
     app = FastAPI(
         title="Analizador de pliegos",
         version="0.1.0",
         lifespan=lifespan,
-        # La documentación interactiva solo fuera de producción.
-        docs_url=None if settings.app_env == "production" else "/docs",
+        # En producción la documentación interactiva solo se publica con EXPONER_DOCS=true.
+        docs_url="/docs" if docs_activos else None,
         redoc_url=None,
-        openapi_url=None if settings.app_env == "production" else "/openapi.json",
+        openapi_url="/openapi.json" if docs_activos else None,
     )
     # S-13: CORS limitado al dominio del frontend.
     app.add_middleware(
@@ -60,6 +62,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         health.router,
         yo.router,
         miembros.router,
+        organizaciones.router,
         licitaciones.router,
         resultados.router,
         conocimiento.router,

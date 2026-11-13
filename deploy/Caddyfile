@@ -1,4 +1,5 @@
 # Proxy inverso (S-01): único servicio publicado en la instancia.
+# Sirve la API y dirige el frontend a su contenedor de produccion.
 # API_DOMAIN en .env:
 #   - un dominio (api.ejemplo.com) → HTTPS automático con Let's Encrypt
 #     (requiere registro DNS A hacia la IP elástica y puertos 80/443 abiertos).
@@ -31,7 +32,7 @@
 }
 
 # Frontend de produccion en su propio contenedor (C-12, DAS 6.5).
-# FRONTEND_DOMAIN=criterio.duckdns.org habilita el sitio; el fallback es local.
+# FRONTEND_DOMAIN define el dominio; FRONTEND_UPSTREAM define el destino interno.
 # El Compose del frontend se conecta a la red interna del backend.
 {$FRONTEND_DOMAIN:http://frontend.localhost} {
 	encode zstd gzip
@@ -44,7 +45,7 @@
 		-Server
 	}
 
-	reverse_proxy frontend:8080
+	reverse_proxy {$FRONTEND_UPSTREAM:frontend:8080}
 
 	log {
 		output stdout
