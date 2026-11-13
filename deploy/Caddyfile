@@ -1,5 +1,5 @@
 # Proxy inverso (S-01): único servicio publicado en la instancia.
-# Sirve la API (API_DOMAIN) y el build estático del frontend (FRONTEND_DOMAIN).
+# Sirve la API y dirige el frontend a su contenedor de produccion.
 # API_DOMAIN en .env:
 #   - un dominio (api.ejemplo.com) → HTTPS automático con Let's Encrypt
 #     (requiere registro DNS A hacia la IP elástica y puertos 80/443 abiertos).
@@ -31,9 +31,10 @@
 	}
 }
 
-# Frontend: SPA estática. FRONTEND_DIR (en .env) se monta en /var/www/analizador-frontend;
-# current es un enlace a releases/<sha> que se resuelve en cada petición.
-{$FRONTEND_DOMAIN:criterio.duckdns.org} {
+# Frontend de produccion en su propio contenedor (C-12, DAS 6.5).
+# FRONTEND_DOMAIN define el dominio; FRONTEND_UPSTREAM define el destino interno.
+# El Compose del frontend se conecta a la red interna del backend.
+{$FRONTEND_DOMAIN:http://frontend.localhost} {
 	encode zstd gzip
 
 	header {
@@ -44,17 +45,7 @@
 		-Server
 	}
 
-	root * /var/www/analizador-frontend/current
-
-	# Los recursos con hash se cachean; el resto (index.html y rutas del cliente) se revalida.
-	@recursos path /assets/*
-	header @recursos Cache-Control "public, max-age=31536000, immutable"
-	@documento not path /assets/*
-	header @documento Cache-Control "no-cache"
-
-	# Rutas del enrutador del cliente: lo que no es un archivo devuelve index.html.
-	try_files {path} /index.html
-	file_server
+	reverse_proxy {$FRONTEND_UPSTREAM:frontend:8080}
 
 	log {
 		output stdout

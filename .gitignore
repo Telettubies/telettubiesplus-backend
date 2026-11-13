@@ -19,6 +19,22 @@ htmlcov/
 !.env.example
 !.env.prod.example
 
+# Llaves privadas y credenciales locales de nube
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ecdsa
+id_ecdsa.*
+id_ed25519
+id_ed25519.*
+id_dsa
+id_dsa.*
+.ssh/
+.aws/
+
 # Instrucciones personales de agentes (no se versionan)
 CLAUDE.local.md
 
@@ -26,3 +42,4 @@ CLAUDE.local.md
 .vscode/
 .idea/
 .DS_Store
+.agents/

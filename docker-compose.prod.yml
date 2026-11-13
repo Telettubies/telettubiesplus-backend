@@ -137,7 +137,9 @@ services:
     image: caddy:2.10-alpine
     environment:
       API_DOMAIN: ${API_DOMAIN:-:80}
-      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-criterio.duckdns.org}
+      # El frontend tiene su propio Compose en la red analizador_interna.
+      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-http://frontend.localhost}
+      FRONTEND_UPSTREAM: ${FRONTEND_UPSTREAM:-frontend:8080}
       PROXY_MAX_BODY: ${PROXY_MAX_BODY:-50MB}
     ports:
       - "80:80"
@@ -147,10 +149,7 @@ services:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-      # Despliegue del frontend en la instancia: current -> releases/<sha> (enlace relativo).
-      # Se monta la carpeta padre para que Caddy siga el enlace en cada petición: montar
-      # current fijaría la versión al crear el contenedor y no vería los nuevos releases.
-      - ${FRONTEND_DIR:-/home/ubuntu/analizador-frontend}:/var/www/analizador-frontend:ro
+
     depends_on:
       api:
         condition: service_healthy
