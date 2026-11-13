@@ -1,0 +1,107 @@
+{
+  "empresa": {
+    "razon_social": "Red Digital Andina S.A.S.",
+    "nit": "901222333-5",
+    "ciudad": "Bogotá D.C.",
+    "representante_legal": "Diana Marcela Pinzón Ríos"
+  },
+  "financiero": [
+    {
+      "anio": 2025,
+      "indice_liquidez": 1.2,
+      "indice_endeudamiento": 0.7,
+      "razon_cobertura_intereses": 3.75,
+      "capital_trabajo_cop": 255000000,
+      "patrimonio_cop": 750000000,
+      "rentabilidad_patrimonio": 0.2,
+      "rentabilidad_activo": 0.06
+    }
+  ],
+  "contratos": [
+    {
+      "id": "RD-2022-UT07",
+      "objeto": "Prestación de servicios de mesa de ayuda y soporte técnico de primer y segundo nivel a la plataforma tecnológica, ejecutado en Unión Temporal Soporte Salud 2022 (participación de Red Digital Andina: 50 %).",
+      "entidad_contratante": "Hospital Universitario del Sumapaz E.S.E. (pública)",
+      "fecha_inicio": "2022-01-17",
+      "fecha_fin": "2022-12-16",
+      "valor_cop": 870000000,
+      "valor_smmlv": 870.0,
+      "codigos_unspsc": [
+        "81111800",
+        "81112100"
+      ],
+      "porcentaje_participacion": 50,
+      "descripcion": "Cumplimiento de ANS: 95,0 %. Valor proporcional a la participación: $435.000.000. Cumplimiento de ANS del 95,0 % exacto."
+    }
+  ],
+  "personas": [
+    {
+      "id": "P-RD-01",
+      "nombre": "Sergio Andrés Valbuena Torres",
+      "profesion": "Ingeniero telemático",
+      "anios_experiencia_general": 5,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Ingeniería Telemática",
+          "institucion": "Universidad Distrital Francisco José de Caldas",
+          "anio": 2021
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Coordinador de proyectos de tecnología",
+          "entidad": "Red Digital Andina S.A.S.",
+          "fecha_inicio": "2024-11-01",
+          "fecha_fin": null,
+          "descripcion": "Coordinación de proyectos de soporte y redes."
+        },
+        {
+          "cargo": "Ingeniero de redes",
+          "entidad": "Conexiones Sabana S.A.S.",
+          "fecha_inicio": "2021-12-01",
+          "fecha_fin": "2024-10-31",
+          "descripcion": "Administración de red cableada e inalámbrica."
+        }
+      ],
+      "certificaciones": [
+        "ITIL v3 Foundation (Axelos, expedida 2022-02-10)"
+      ]
+    }
+  ],
+  "certificaciones": [
+    {
+      "nombre": "ISO 9001:2015",
+      "entidad_emisora": "Instituto de Normas y Certificación del Centro",
+      "fecha_expedicion": "2024-12-01",
+      "fecha_vencimiento": "2027-11-30",
+      "alcance": "Comercialización e instalación de equipos de cómputo, redes y cableado estructurado."
+    }
+  ],
+  "capacidades": [
+    {
+      "nombre": "Mesa de ayuda",
+      "descripcion": "Mesa de ayuda en horario hábil; turnos de disponibilidad para incidentes críticos fuera de horario."
+    },
+    {
+      "nombre": "Personal técnico de soporte",
+      "descripcion": "Planta de 9 técnicos de soporte."
+    },
+    {
+      "nombre": "Duración de la sociedad",
+      "descripcion": "Constituida el 2015-10-20; duración hasta el 2028-12-31. Certificado de existencia expedido el 2026-10-25."
+    },
+    {
+      "nombre": "Registro Único de Proponentes",
+      "descripcion": "Vigente y en firme; códigos UNSPSC: 81111800, 81112100, 43211500."
+    },
+    {
+      "nombre": "Garantía de seriedad de la oferta",
+      "descripcion": "$85.000.000, vigencia 2026-11-24 a 2027-02-24."
+    },
+    {
+      "nombre": "Seguridad social y parafiscales",
+      "descripcion": "Al día; certificación firmada por: Revisora fiscal Luz Ángela Barrera, T.P. 98214-T."
+    }
+  ]
+}

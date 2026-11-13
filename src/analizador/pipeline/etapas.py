@@ -1,7 +1,7 @@
 """Etapas del pipeline de análisis (sección 5.3), como nodos del grafo.
 
 Cada nodo registra su avance en PostgreSQL (decorador `etapa`) y delega en el módulo de su
-etapa. Las que todavía son stubs llevan un TODO con su responsabilidad y la decisión del DAS.
+etapa.
 """
 
 import uuid

@@ -1,0 +1,155 @@
+{
+  "empresa": {
+    "razon_social": "Archivo Ágil Ltda.",
+    "nit": "901555666-2",
+    "ciudad": "Popayán, Cauca",
+    "representante_legal": "Óscar Iván Muñoz Paz"
+  },
+  "financiero": [
+    {
+      "anio": 2025,
+      "indice_liquidez": 1.1,
+      "indice_endeudamiento": 0.6799,
+      "razon_cobertura_intereses": 1.8,
+      "capital_trabajo_cop": 90000000,
+      "patrimonio_cop": 890000000,
+      "rentabilidad_patrimonio": 0.0404,
+      "rentabilidad_activo": 0.0129
+    }
+  ],
+  "contratos": [
+    {
+      "id": "AA-2022-001",
+      "objeto": "Digitalización y desarrollo de un aplicativo de consulta para el archivo central.",
+      "entidad_contratante": "Alcaldía de Popayán (pública)",
+      "fecha_inicio": "2022-05-02",
+      "fecha_fin": "2023-01-31",
+      "valor_cop": 480000000,
+      "valor_smmlv": 480.0,
+      "codigos_unspsc": [
+        "81111500",
+        "43232300"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Documentos migrados: 200.000. Digitalización de 200.000 folios."
+    },
+    {
+      "id": "AA-2023-004",
+      "objeto": "Soporte técnico a equipos de cómputo y red.",
+      "entidad_contratante": "Cooperativa Agraria del Cauca (privada)",
+      "fecha_inicio": "2023-02-01",
+      "fecha_fin": "2023-12-31",
+      "valor_cop": 290000000,
+      "valor_smmlv": 250.0,
+      "codigos_unspsc": [
+        "81111800"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Un solo código UNSPSC y objeto ajeno a sistemas de información o gestión documental."
+    },
+    {
+      "id": "AA-2018-002",
+      "objeto": "Implementación de un sistema de gestión documental.",
+      "entidad_contratante": "Gobernación del Cauca (pública)",
+      "fecha_inicio": "2018-03-01",
+      "fecha_fin": "2019-06-30",
+      "valor_cop": 1100000000,
+      "valor_smmlv": null,
+      "codigos_unspsc": [
+        "81111500",
+        "81112200"
+      ],
+      "porcentaje_participacion": 100,
+      "descripcion": "Documentos migrados: 650.000. Terminado antes de la ventana de siete años previa al cierre."
+    }
+  ],
+  "personas": [
+    {
+      "id": "P-AA-01",
+      "nombre": "Camilo Ernesto Bravo Ledezma",
+      "profesion": "Ingeniero industrial",
+      "anios_experiencia_general": 6,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Ingeniería Industrial",
+          "institucion": "Universidad del Cauca",
+          "anio": 2019
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Coordinador de proyectos",
+          "entidad": "Archivo Ágil Ltda.",
+          "fecha_inicio": "2022-01-01",
+          "fecha_fin": null,
+          "descripcion": "Coordinación de proyectos de digitalización."
+        }
+      ],
+      "certificaciones": [
+        "PMP – Project Management Professional (PMI, vencida el 2025-09-30)"
+      ]
+    },
+    {
+      "id": "P-AA-02",
+      "nombre": "Valeria Imbachí Chilito",
+      "profesion": "Ingeniera de sistemas",
+      "anios_experiencia_general": 6,
+      "titulos": [
+        {
+          "nivel": "pregrado",
+          "titulo": "Ingeniería de Sistemas",
+          "institucion": "Fundación Universitaria de Popayán",
+          "anio": 2020
+        }
+      ],
+      "experiencias": [
+        {
+          "cargo": "Desarrolladora",
+          "entidad": "Archivo Ágil Ltda.",
+          "fecha_inicio": "2020-08-01",
+          "fecha_fin": null,
+          "descripcion": "Desarrollo web."
+        }
+      ],
+      "certificaciones": [
+        "AWS Certified Cloud Practitioner (2023)"
+      ]
+    }
+  ],
+  "certificaciones": [
+    {
+      "nombre": "ISO 9001:2015",
+      "entidad_emisora": "Certificadora Regional de Calidad",
+      "fecha_expedicion": "2023-07-01",
+      "fecha_vencimiento": "2026-06-30",
+      "alcance": "Organización de archivos y digitalización de documentos."
+    }
+  ],
+  "capacidades": [
+    {
+      "nombre": "Equipo de desarrollo propio",
+      "descripcion": "Certificación del representante legal: planta de 8 ingenieros de desarrollo."
+    },
+    {
+      "nombre": "Alojamiento",
+      "descripcion": "Servidores propios en las instalaciones de la empresa en Popayán."
+    },
+    {
+      "nombre": "Duración de la sociedad",
+      "descripcion": "Constituida el 2016-02-11; duración hasta el 2030-02-11. Certificado de existencia expedido el 2026-11-02."
+    },
+    {
+      "nombre": "Registro Único de Proponentes",
+      "descripcion": "Vigente y en firme; códigos UNSPSC: 81111500, 80161500."
+    },
+    {
+      "nombre": "Garantía de seriedad de la oferta",
+      "descripcion": "$315.000.000, vigencia 2026-11-30 a 2027-01-30 (2 meses)."
+    },
+    {
+      "nombre": "Seguridad social y parafiscales",
+      "descripcion": "Al día; certificación firmada por: Contador público Liliana Ortiz (no revisor fiscal)."
+    }
+  ]
+}

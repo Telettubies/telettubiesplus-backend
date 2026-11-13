@@ -90,9 +90,12 @@ El frontend incluye pruebas de carga, permisos y combinación de registros, adem
 de la comprobación del contrato OpenAPI y de tipos. La compilación mantiene el aviso
 existente sobre tamaño de algunos bundles.
 
+## Indexación automática de PDF
 
-### Indexacion automatica de PDF
-
-Los trabajos de documento intentan publicar e indexar los candidatos despues de extraerlos, si la base combinada supera el contrato BaseConocimiento. No se rellenan datos obligatorios ausentes. Los documentos incompletos permanecen en revision y conservan la aprobacion manual. Los documentos en revision pueden volver a encolarse mediante POST /api/conocimiento/documentos/{id}/reintentar. Las publicaciones automaticas se serializan por organizacion; un fallo de embeddings conserva la base anterior. La publicacion automatica no registra un aprobador humano.
-
-Cambio solicitado sin ejecutar pruebas; pendiente validacion antes de produccion.
+Los trabajos de documento intentan publicar e indexar los candidatos después de extraerlos,
+si la base combinada cumple el contrato `BaseConocimiento`. No se rellenan datos obligatorios
+ausentes: los documentos incompletos permanecen en revisión y conservan la aprobación manual.
+Un documento en revisión puede volver a encolarse con
+`POST /api/conocimiento/documentos/{id}/reintentar`. Las publicaciones automáticas se
+serializan por organización; un fallo de embeddings conserva la base anterior. La
+publicación automática no registra un aprobador humano.

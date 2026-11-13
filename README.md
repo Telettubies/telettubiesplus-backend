@@ -99,7 +99,7 @@ PostgreSQL del Compose de desarrollo; si no está arriba, se omiten. En el CI la
 El contrato de la API para el frontend está en [docs/openapi.json](docs/openapi.json); se
 regenera con `uv run analizador-cli exportar-openapi` y una prueba falla si queda desactualizado.
 El plan de implementación y su seguimiento están en [docs/PLAN.md](docs/PLAN.md).
-La configuración de agentes (Codex y Claude Code) y sus skills están en [Agent Skills](agent_skills.md).
+La configuración de agentes (Codex y Claude Code) y sus skills están en [Agent Skills](docs/desarrollo/agent_skills.md).
 
 ## Estructura
 
@@ -171,6 +171,8 @@ alerta de consumo. Es la última barrera si fallan las cuotas.
 Un administrador carga un único archivo JSON con `POST /api/conocimiento` (campo `archivo`). El
 contrato está en `src/analizador/contratos/conocimiento.py` y hay un ejemplo sintético completo
 en [docs/ejemplos/base_conocimiento.json](docs/ejemplos/base_conocimiento.json).
+Para probar de punta a punta hay seis empresas sintéticas (PDF + JSON) con resultado esperado
+frente a dos pliegos de ejemplo en [docs/ejemplos/escenarios](docs/ejemplos/escenarios/README.md).
 
 - El archivo se valida entero: si algo falla responde 422 con **todos** los errores, cada uno con
   su campo (`contratos[2].fecha_fin`), su ubicación y un mensaje; no se guarda nada.
