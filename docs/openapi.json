@@ -668,6 +668,10 @@
             "title": "Id",
             "type": "string"
           },
+          "invitacion_pendiente": {
+            "title": "Invitacion Pendiente",
+            "type": "boolean"
+          },
           "organizacion_id": {
             "format": "uuid",
             "title": "Organizacion Id",
@@ -688,6 +692,7 @@
           "usuario_id",
           "email",
           "rol",
+          "invitacion_pendiente",
           "creado_en"
         ],
         "title": "MiembroOut",
@@ -2646,6 +2651,7 @@
     },
     "/api/miembros/invitaciones": {
       "post": {
+        "description": "Invita un correo con un rol a la organización del administrador (HU-B02).",
         "operationId": "invitar_api_miembros_invitaciones_post",
         "parameters": [
           {

@@ -23,6 +23,10 @@ class TokenInvalidoError(Exception):
     pass
 
 
+class UsuarioExistenteError(Exception):
+    """El correo ya tiene una cuenta en Supabase: la invitación no la crea de nuevo."""
+
+
 class SupabaseError(Exception):
     pass
 
@@ -64,8 +68,8 @@ async def verificar_token(token: str) -> UsuarioAutenticado:
 async def invitar_usuario(email: str) -> uuid.UUID:
     """Invita un usuario por correo y devuelve su id de Supabase.
 
-    Pendiente de validar con el proyecto real: comportamiento cuando el correo ya
-    existe en Supabase (p. ej. un usuario que ya pertenece a otra organización).
+    Si el correo ya tiene cuenta (por ejemplo, pertenece a otra organización), Supabase no lo
+    invita de nuevo: se lanza `UsuarioExistenteError`. Pendiente de validar con el proyecto real.
     """
     settings = get_settings()
     if settings.supabase_service_role_key is None:
@@ -77,7 +81,33 @@ async def invitar_usuario(email: str) -> uuid.UUID:
             headers={"apikey": clave, "Authorization": f"Bearer {clave}"},
             json={"email": email},
         )
+    if respuesta.status_code == 422 and _codigo_de_error(respuesta) == "email_exists":
+        raise UsuarioExistenteError("El correo ya tiene una cuenta")
     if respuesta.status_code >= 400:
         # No se reenvía el cuerpo completo al cliente (puede contener detalles internos).
         raise SupabaseError(f"Supabase respondió {respuesta.status_code} al invitar")
     return uuid.UUID(respuesta.json()["id"])
+
+
+def _codigo_de_error(respuesta: httpx.Response) -> str | None:
+    try:
+        cuerpo = respuesta.json()
+    except ValueError:
+        return None
+    codigo = cuerpo.get("error_code") if isinstance(cuerpo, dict) else None
+    return codigo if isinstance(codigo, str) else None
+
+
+async def eliminar_usuario(usuario_id: uuid.UUID) -> None:
+    """Borra un usuario recién invitado cuando no se pudo crear su membresía (R-15)."""
+    settings = get_settings()
+    if settings.supabase_service_role_key is None:
+        raise SupabaseError("SUPABASE_SERVICE_ROLE_KEY no está configurada")
+    clave = settings.supabase_service_role_key.get_secret_value()
+    async with httpx.AsyncClient(timeout=15) as cliente:
+        respuesta = await cliente.delete(
+            f"{settings.supabase_issuer}/admin/users/{usuario_id}",
+            headers={"apikey": clave, "Authorization": f"Bearer {clave}"},
+        )
+    if respuesta.status_code >= 400 and respuesta.status_code != 404:
+        raise SupabaseError(f"Supabase respondió {respuesta.status_code} al eliminar")

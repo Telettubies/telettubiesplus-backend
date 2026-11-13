@@ -36,6 +36,7 @@ class MiembroOut(_Orm):
     usuario_id: uuid.UUID
     email: str
     rol: Rol
+    invitacion_pendiente: bool
     creado_en: datetime
 
 

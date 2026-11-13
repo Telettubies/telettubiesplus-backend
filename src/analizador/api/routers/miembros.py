@@ -1,20 +1,24 @@
-"""Gestión de miembros de la organización (RF-09, F-01).
+"""Gestión de miembros de la organización (RF-09, F-01, HU-B02, HU-B03).
 
 S-05: solo un administrador invita, y solo a su organización; un revisor no cambia roles;
-no se elimina ni degrada al último administrador.
+no se elimina ni degrada al último administrador. Cada invitación, cambio de rol y retiro
+queda en `auditoria_miembros` con su autor y su fecha.
 """
 
+import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from analizador.api.deps import AdminDep, SessionDep
+from analizador.api.deps import AdminDep, Contexto, SessionDep
 from analizador.integrations import supabase
-from analizador.models import Miembro
-from analizador.models.enums import Rol
+from analizador.models import AuditoriaMiembro, Miembro
+from analizador.models.enums import AccionMiembro, Rol
 from analizador.schemas import CambioRolIn, InvitacionIn, MiembroOut
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/miembros", tags=["miembros"])
 
@@ -41,6 +45,25 @@ async def _es_ultimo_admin(session: AsyncSession, miembro: Miembro) -> bool:
     return admins == 1
 
 
+def _auditar(
+    contexto: Contexto,
+    accion: AccionMiembro,
+    miembro: Miembro,
+    *,
+    rol_anterior: Rol | None = None,
+    rol_nuevo: Rol | None = None,
+) -> AuditoriaMiembro:
+    return AuditoriaMiembro(
+        organizacion_id=contexto.organizacion_id,
+        accion=accion,
+        actor_usuario_id=contexto.usuario.usuario_id,
+        miembro_usuario_id=miembro.usuario_id,
+        email=miembro.email,
+        rol_anterior=rol_anterior,
+        rol_nuevo=rol_nuevo,
+    )
+
+
 @router.get("", response_model=list[MiembroOut])
 async def listar(contexto: AdminDep, session: SessionDep) -> list[Miembro]:
     resultado = await session.scalars(
@@ -53,29 +76,51 @@ async def listar(contexto: AdminDep, session: SessionDep) -> list[Miembro]:
 
 @router.post("/invitaciones", response_model=MiembroOut, status_code=status.HTTP_201_CREATED)
 async def invitar(datos: InvitacionIn, contexto: AdminDep, session: SessionDep) -> Miembro:
+    """Invita un correo con un rol a la organización del administrador (HU-B02)."""
+    email = datos.email.strip()
     existente = await session.scalar(
-        select(Miembro).where(
+        select(Miembro.id).where(
             Miembro.organizacion_id == contexto.organizacion_id,
-            func.lower(Miembro.email) == datos.email.lower(),
+            func.lower(Miembro.email) == email.lower(),
         )
     )
     if existente is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ese correo ya es miembro de la organización")
 
     try:
-        usuario_id = await supabase.invitar_usuario(datos.email)
+        usuario_id = await supabase.invitar_usuario(email)
+    except supabase.UsuarioExistenteError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Ese correo ya tiene una cuenta. Por ahora solo se invita a personas sin cuenta.",
+        ) from exc
     except supabase.SupabaseError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo enviar la invitación") from exc
 
-    # R-15: el registro de miembro se crea en la misma operación que la invitación.
+    # R-15: si el miembro no se puede guardar, se deshace la cuenta recién invitada.
     miembro = Miembro(
         organizacion_id=contexto.organizacion_id,
         usuario_id=usuario_id,
-        email=datos.email,
+        email=email,
         rol=datos.rol,
+        invitacion_pendiente=True,
     )
-    session.add(miembro)
-    await session.commit()
+    session.add_all(
+        [miembro, _auditar(contexto, AccionMiembro.INVITACION, miembro, rol_nuevo=datos.rol)]
+    )
+    try:
+        await session.commit()
+    except Exception as exc:
+        await session.rollback()
+        logger.exception("No se pudo guardar el miembro invitado %s", usuario_id)
+        try:
+            await supabase.eliminar_usuario(usuario_id)
+        except supabase.SupabaseError:
+            logger.exception("No se pudo deshacer la invitación del usuario %s", usuario_id)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "No se pudo completar la invitación. Intente de nuevo.",
+        ) from exc
     return miembro
 
 
