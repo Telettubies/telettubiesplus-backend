@@ -32,12 +32,16 @@ class SupabaseFalso:
     async def eliminar_usuario(self, usuario_id: uuid.UUID) -> None:
         self.eliminados.append(usuario_id)
 
+    async def id_de_usuario_existente(self, email: str) -> uuid.UUID:
+        return self.usuario_id
+
 
 @pytest.fixture
 def supabase_falso(monkeypatch: pytest.MonkeyPatch) -> SupabaseFalso:
     falso = SupabaseFalso()
     monkeypatch.setattr(supabase, "invitar_usuario", falso.invitar_usuario)
     monkeypatch.setattr(supabase, "eliminar_usuario", falso.eliminar_usuario)
+    monkeypatch.setattr(supabase, "id_de_usuario_existente", falso.id_de_usuario_existente)
     return falso
 
 
@@ -108,7 +112,7 @@ async def test_si_supabase_falla_no_se_crea_el_miembro(
     assert len(await _miembros(sesion, admin.organizacion_id)) == 1
 
 
-async def test_un_correo_con_cuenta_existente_se_rechaza_con_un_mensaje_claro(
+async def test_un_correo_con_cuenta_existente_recibe_acceso_con_esa_cuenta(
     cliente: httpx.AsyncClient, sesion: AsyncSession, supabase_falso: SupabaseFalso
 ) -> None:
     admin = await crear_organizacion(sesion)
@@ -118,9 +122,12 @@ async def test_un_correo_con_cuenta_existente_se_rechaza_con_un_mensaje_claro(
         "/api/miembros/invitaciones", headers=admin.cabeceras, json={"email": "otra@empresa.co"}
     )
 
-    assert respuesta.status_code == 409
-    assert "ya tiene una cuenta" in respuesta.json()["detail"]
-    assert len(await _miembros(sesion, admin.organizacion_id)) == 1
+    assert respuesta.status_code == 201
+    assert respuesta.json()["usuario_id"] == str(supabase_falso.usuario_id)
+    assert respuesta.json()["rol"] == "revisor"
+    assert len(await _miembros(sesion, admin.organizacion_id)) == 2
+    # Nunca se borra la cuenta que ya existía.
+    assert supabase_falso.eliminados == []
 
 
 # --- Criterio 3: solo a su propia organización ---------------------------------------------
