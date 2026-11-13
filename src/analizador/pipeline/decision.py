@@ -19,7 +19,7 @@ from analizador.core.config import get_settings
 from analizador.db.session import get_sessionmaker
 from analizador.integrations import anthropic_client
 from analizador.models import Item, Licitacion, Requisito, Resultado, Seccion, TrabajoProcesamiento
-from analizador.models.enums import EstadoLicitacion, TipoRequisito
+from analizador.models.enums import EstadoLicitacion, TipoExigibilidad, TipoRequisito
 from analizador.pipeline import cobertura
 from analizador.pipeline.errores import AnalisisError
 from analizador.pipeline.estado import EstadoAnalisis
@@ -132,7 +132,11 @@ async def preparar(estado: EstadoAnalisis) -> DecisionAnalisis:
             .join(Requisito, Item.requisito_id == Requisito.id)
             .join(Seccion, Requisito.seccion_id == Seccion.id)
             .outerjoin(Resultado, Resultado.item_id == Item.id)
-            .where(Requisito.licitacion_id == licitacion.id)
+            .where(
+                Requisito.licitacion_id == licitacion.id,
+                # La lista de chequeo operativa no es cumplimiento: no entra en la decisión.
+                Item.exigibilidad == TipoExigibilidad.HISTORICO_EMPRESA,
+            )
             .order_by(Seccion.orden, Requisito.creado_en, Requisito.id, Item.orden, Item.id)
         )
         items = [
