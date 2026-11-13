@@ -39,6 +39,16 @@ PDF = b"%PDF-1.7\n% pliego de prueba\n"
 # Cuerpo válido para cada operación de escritura con identificador en la ruta. El barrido
 # falla si aparece una operación nueva sin cuerpo de ejemplo: así no queda sin probar.
 CUERPOS: dict[tuple[str, str], dict[str, Any] | None] = {
+    ("post", "/api/conocimiento/documentos/{identificador}/retirar"): None,
+    ("post", "/api/licitaciones/{licitacion_id}/indexar-chat"): None,
+    ("post", "/api/conocimiento/documentos/{identificador}/reintentar"): None,
+    ("post", "/api/conocimiento/documentos/{identificador}/rechazar"): None,
+    ("post", "/api/conocimiento/documentos/{identificador}/aprobar"): {
+        "base": {"empresa": {"razon_social": "Prueba", "nit": "900123456"}},
+        "procedencia": [
+            {"tipo": "empresa", "datos": {"razon_social": "Prueba"}, "pagina": 1, "cita": "prueba"}
+        ],
+    },
     ("post", "/api/licitaciones/{licitacion_id}/reintentar"): None,
     ("post", "/api/licitaciones/{licitacion_id}/chat"): {"pregunta": "¿Qué exige el pliego?"},
     ("post", "/api/licitaciones/{licitacion_id}/observaciones"): {

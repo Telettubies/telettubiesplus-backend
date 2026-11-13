@@ -595,3 +595,41 @@ async def observaciones(
     )
     await session.commit()
     return borrador
+
+
+@router.post("/{licitacion_id}/indexar-chat", response_model=TrabajoOut, status_code=202)
+async def indexar_chat(
+    licitacion_id: uuid.UUID, contexto: ContextoDep, session: SessionDep, publicador: PublicadorDep
+) -> TrabajoProcesamiento:
+    licitacion = await obtener_licitacion(session, contexto.organizacion_id, licitacion_id)
+    if licitacion.estado != EstadoLicitacion.COMPLETADA:
+        raise HTTPException(409, "El analisis debe estar completado")
+    await session.scalar(
+        select(Licitacion.id).where(Licitacion.id == licitacion_id).with_for_update()
+    )
+    en_curso = await session.scalar(
+        select(TrabajoProcesamiento.id).where(
+            TrabajoProcesamiento.licitacion_id == licitacion_id,
+            TrabajoProcesamiento.tipo == TipoTrabajo.INDEXACION,
+            TrabajoProcesamiento.detalle["operacion"].astext == "chat",
+            TrabajoProcesamiento.estado.in_([EstadoTrabajo.EN_COLA, EstadoTrabajo.EN_EJECUCION]),
+        )
+    )
+    if en_curso:
+        raise HTTPException(409, "Ya hay una indexacion del chat en curso")
+    trabajo = TrabajoProcesamiento(
+        organizacion_id=contexto.organizacion_id,
+        licitacion_id=licitacion_id,
+        tipo=TipoTrabajo.INDEXACION,
+        detalle={"operacion": "chat"},
+    )
+    session.add(trabajo)
+    await session.commit()
+    try:
+        await publicador.publicar(TipoTrabajo.INDEXACION, trabajo.id)
+    except Exception as exc:
+        trabajo.estado = EstadoTrabajo.FALLIDO
+        trabajo.error = "No se pudo iniciar la indexacion del chat"
+        await session.commit()
+        raise HTTPException(503, "Cola no disponible") from exc
+    return trabajo

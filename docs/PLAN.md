@@ -168,3 +168,12 @@ Se completa al cerrar cada historia.
   y cuenta para `CUOTA_OBSERVACIONES_DIARIA`.
 - **Exportación (HU-B29).** Los textos que empiezan con `=`, `+`, `-` o `@` se ven en Excel con
   un apóstrofo delante: es el costo de neutralizar fórmulas (S-12).
+
+
+## Ampliacion: documentos empresariales y consistencia de la base
+
+El responsable amplio Q-05 para admitir PDFs empresariales ademas del JSON existente.
+Se implementaron carga privada, lectura/OCR, candidatos con procedencia, revision,
+publicacion diferida, historial y recuperacion independiente del chat. No sustituye
+las historias de extraccion del pliego ni cambia los proveedores por valores fijos.
+Diseno, migracion, compatibilidad y limites: [DOCUMENTOS_EMPRESA.md](DOCUMENTOS_EMPRESA.md).

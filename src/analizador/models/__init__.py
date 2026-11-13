@@ -1,6 +1,7 @@
 """Modelos ORM. Importarlos aquí registra todas las tablas en Base.metadata (Alembic)."""
 
 from analizador.models.conocimiento import EmbeddingCache, Fragmento, FuenteConocimiento
+from analizador.models.documento import CambioConocimiento, DocumentoEmpresa
 from analizador.models.licitacion import (
     Item,
     Licitacion,
@@ -17,6 +18,8 @@ from analizador.models.uso import EventoUso
 
 __all__ = [
     "AuditoriaMiembro",
+    "CambioConocimiento",
+    "DocumentoEmpresa",
     "EmbeddingCache",
     "EventoUso",
     "Fragmento",

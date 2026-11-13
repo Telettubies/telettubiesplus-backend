@@ -9,6 +9,7 @@ espera ante errores de límite de velocidad o de disponibilidad (HU-B26, R-02, Q
 
 import asyncio
 import logging
+import math
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
 from typing import Any, Literal
@@ -95,9 +96,17 @@ async def llamar[T](operacion: Callable[[], Awaitable[T]]) -> T:
                     f"NVIDIA no respondió tras {reintentos} reintentos"
                 ) from exc
             espera = _espera(exc, intento)
+            estado = exc.status_code if isinstance(exc, openai.APIStatusError) else None
+            peticion = (
+                exc.response.headers.get("x-request-id", "")[:128]
+                if isinstance(exc, openai.APIStatusError)
+                else ""
+            )
             logger.warning(
-                "NVIDIA respondió %s; reintento %d de %d en %.0f s",
+                "NVIDIA respondio %s HTTP=%s request_id=%s; reintento %d de %d en %.0f s",
                 type(exc).__name__,
+                estado,
+                peticion,
                 intento + 1,
                 reintentos,
                 espera,
@@ -120,7 +129,18 @@ async def embeddings(textos: list[str], tipo: Literal["query", "passage"]) -> li
             extra_body={"input_type": tipo, "truncate": "END"},
         )
     )
-    return [dato.embedding for dato in respuesta.data]
+    datos = sorted(respuesta.data, key=lambda dato: dato.index)
+    if [dato.index for dato in datos] != list(range(len(textos))):
+        raise RuntimeError("NVIDIA devolvio indices de embeddings incompletos o duplicados")
+    vectores = [dato.embedding for dato in datos]
+    if (
+        not vectores
+        or not vectores[0]
+        or len({len(v) for v in vectores}) != 1
+        or any(not math.isfinite(x) for v in vectores for x in v)
+    ):
+        raise RuntimeError("NVIDIA devolvio embeddings invalidos")
+    return vectores
 
 
 async def completar(

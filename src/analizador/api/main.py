@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from analizador.api import errores
 from analizador.api.routers import (
     conocimiento,
+    documentos,
     health,
     licitaciones,
     limites,
@@ -66,6 +67,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         licitaciones.router,
         resultados.router,
         conocimiento.router,
+        documentos.router,
         limites.router,
     ):
         app.include_router(router)
