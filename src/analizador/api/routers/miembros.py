@@ -89,13 +89,18 @@ async def invitar(datos: InvitacionIn, contexto: AdminDep, session: SessionDep) 
     if existente is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ese correo ya es miembro de la organización")
 
+    cuenta_nueva = True
     try:
         usuario_id = await supabase.invitar_usuario(email)
-    except supabase.UsuarioExistenteError as exc:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Ese correo ya tiene una cuenta. Por ahora solo se invita a personas sin cuenta.",
-        ) from exc
+    except supabase.UsuarioExistenteError:
+        # La persona ya tiene cuenta (p. ej. entró con Google): se le da acceso con esa cuenta.
+        cuenta_nueva = False
+        try:
+            usuario_id = await supabase.id_de_usuario_existente(email)
+        except supabase.SupabaseError as exc:
+            raise HTTPException(
+                status.HTTP_502_BAD_GATEWAY, "No se pudo dar acceso a esa cuenta"
+            ) from exc
     except supabase.SupabaseError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo enviar la invitación") from exc
 
@@ -115,10 +120,11 @@ async def invitar(datos: InvitacionIn, contexto: AdminDep, session: SessionDep) 
     except Exception as exc:
         await session.rollback()
         logger.exception("No se pudo guardar el miembro invitado %s", usuario_id)
-        try:
-            await supabase.eliminar_usuario(usuario_id)
-        except supabase.SupabaseError:
-            logger.exception("No se pudo deshacer la invitación del usuario %s", usuario_id)
+        if cuenta_nueva:  # nunca se borra una cuenta que ya existía
+            try:
+                await supabase.eliminar_usuario(usuario_id)
+            except supabase.SupabaseError:
+                logger.exception("No se pudo deshacer la invitación del usuario %s", usuario_id)
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             "No se pudo completar la invitación. Intente de nuevo.",

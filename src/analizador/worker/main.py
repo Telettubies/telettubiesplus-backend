@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import logging
 import signal
+import sys
 from collections.abc import AsyncIterator
 from functools import partial
 from typing import Any
@@ -54,7 +55,11 @@ async def _main() -> None:
     parar = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, parar.set)
+        try:
+            loop.add_signal_handler(sig, parar.set)
+        except NotImplementedError:
+            # Windows no implementa add_signal_handler en sus bucles de asyncio.
+            signal.signal(sig, lambda _sig, _frame: loop.call_soon_threadsafe(parar.set))
 
     async with _checkpointer() as checkpointer:
         grafo_analisis: Any = grafo.construir(checkpointer)
@@ -66,7 +71,11 @@ async def _main() -> None:
 
 
 def run() -> None:
-    asyncio.run(_main())
+    if sys.platform == "win32":
+        # Desarrollo local en Windows: psycopg async no admite el ProactorEventLoop por defecto.
+        asyncio.run(_main(), loop_factory=asyncio.SelectorEventLoop)
+    else:
+        asyncio.run(_main())
 
 
 if __name__ == "__main__":
