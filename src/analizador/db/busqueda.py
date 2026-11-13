@@ -11,7 +11,8 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from analizador.models import Fragmento
+from analizador.db.conocimiento import filtro_version, version_activa
+from analizador.models import Fragmento, FuenteConocimiento
 from analizador.models.enums import OrigenFragmento
 
 
@@ -24,6 +25,7 @@ async def fragmentos_cercanos(
     limite: int,
     licitacion_id: uuid.UUID | None = None,
     modelo: str | None = None,
+    version_empresa: str | None = None,
 ) -> list[tuple[Fragmento, float]]:
     """Fragmentos más cercanos al vector, con su distancia coseno (0 = idéntico).
 
@@ -41,6 +43,11 @@ async def fragmentos_cercanos(
     )
     if origen is OrigenFragmento.PLIEGO:
         consulta = consulta.where(Fragmento.licitacion_id == licitacion_id)
+    if origen is OrigenFragmento.EMPRESA:
+        version = version_empresa or await version_activa(session, organizacion_id)
+        consulta = consulta.join(
+            FuenteConocimiento, Fragmento.fuente_conocimiento_id == FuenteConocimiento.id
+        ).where(filtro_version(version))
     if modelo is not None:
         consulta = consulta.where(Fragmento.modelo_embedding == modelo)
     filas = await session.execute(consulta.order_by(distancia).limit(limite))

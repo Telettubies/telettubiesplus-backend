@@ -16,6 +16,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from analizador.core.config import get_settings
+from analizador.db.conocimiento import filtro_version, version_activa
 from analizador.models import EmbeddingCache, Fragmento, FuenteConocimiento, TrabajoProcesamiento
 from analizador.models.enums import EstadoTrabajo, OrigenFragmento, TipoTrabajo
 from analizador.worker import handlers
@@ -91,7 +92,12 @@ async def _trabajo(sesion: AsyncSession, trabajo_id: uuid.UUID) -> TrabajoProces
 async def _fragmentos(sesion: AsyncSession, quien: Identidad) -> list[Fragmento]:
     sesion.expire_all()
     resultado = await sesion.scalars(
-        select(Fragmento).where(Fragmento.organizacion_id == quien.organizacion_id)
+        select(Fragmento)
+        .join(FuenteConocimiento, Fragmento.fuente_conocimiento_id == FuenteConocimiento.id)
+        .where(
+            Fragmento.organizacion_id == quien.organizacion_id,
+            filtro_version(await version_activa(sesion, quien.organizacion_id)),
+        )
     )
     return list(resultado)
 

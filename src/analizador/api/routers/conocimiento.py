@@ -8,19 +8,25 @@ anterior por completo y encola su indexación (HU-B06).
 import json
 import logging
 import uuid
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from pydantic import ValidationError
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from analizador.api.deps import AdminDep, ContextoDep, PublicadorDep, SessionDep
 from analizador.contratos.conocimiento import BaseConocimiento
 from analizador.contratos.errores import ErrorDeCampo, errores_de_validacion
 from analizador.core.config import get_settings
+from analizador.db.conocimiento import crear_fuentes, filtro_version, version_activa
 from analizador.messaging.publicador import Publicador
-from analizador.models import Fragmento, FuenteConocimiento, TrabajoProcesamiento
+from analizador.models import (
+    CambioConocimiento,
+    Fragmento,
+    FuenteConocimiento,
+    TrabajoProcesamiento,
+)
 from analizador.models.enums import (
     EstadoTrabajo,
     OrigenFragmento,
@@ -81,35 +87,17 @@ async def _leer_base(archivo: UploadFile) -> BaseConocimiento:
         raise _rechazo(errores_de_validacion(exc)) from exc
 
 
-def _fuentes(base: BaseConocimiento, organizacion_id: uuid.UUID) -> list[FuenteConocimiento]:
-    """Una fuente por registro: es la unidad que después se indexa y se cita como evidencia."""
-
-    def fuente(tipo: TipoFuenteConocimiento, titulo: str, registro: Any) -> FuenteConocimiento:
-        return FuenteConocimiento(
-            organizacion_id=organizacion_id,
-            tipo=tipo,
-            titulo=titulo[:300],
-            datos=registro.model_dump(mode="json"),
-        )
-
-    tipos = TipoFuenteConocimiento
-    return [
-        fuente(tipos.EMPRESA, base.empresa.razon_social, base.empresa),
-        *(
-            fuente(tipos.FINANCIERO, f"Indicadores financieros {f.anio}", f)
-            for f in base.financiero
-        ),
-        *(fuente(tipos.CONTRATO, f"{c.id} · {c.objeto}", c) for c in base.contratos),
-        *(fuente(tipos.HOJA_DE_VIDA, p.nombre, p) for p in base.personas),
-        *(fuente(tipos.CERTIFICACION, c.nombre, c) for c in base.certificaciones),
-        *(fuente(tipos.CAPACIDAD, c.nombre, c) for c in base.capacidades),
-    ]
+_fuentes = crear_fuentes
 
 
 async def _resumen(session: AsyncSession, organizacion_id: uuid.UUID) -> ResumenConocimiento:
+    version = await version_activa(session, organizacion_id)
     filas = await session.execute(
         select(FuenteConocimiento.tipo, func.count(), func.max(FuenteConocimiento.creado_en))
-        .where(FuenteConocimiento.organizacion_id == organizacion_id)
+        .where(
+            FuenteConocimiento.organizacion_id == organizacion_id,
+            filtro_version(version),
+        )
         .group_by(FuenteConocimiento.tipo)
     )
     conteos: dict[TipoFuenteConocimiento, int] = {}
@@ -121,6 +109,7 @@ async def _resumen(session: AsyncSession, organizacion_id: uuid.UUID) -> Resumen
     empresa = await session.scalar(
         select(FuenteConocimiento.titulo).where(
             FuenteConocimiento.organizacion_id == organizacion_id,
+            filtro_version(version),
             FuenteConocimiento.tipo == TipoFuenteConocimiento.EMPRESA,
         )
     )
@@ -135,9 +124,11 @@ async def _resumen(session: AsyncSession, organizacion_id: uuid.UUID) -> Resumen
     fragmentos = await session.scalar(
         select(func.count())
         .select_from(Fragmento)
+        .join(FuenteConocimiento, Fragmento.fuente_conocimiento_id == FuenteConocimiento.id)
         .where(
             Fragmento.organizacion_id == organizacion_id,
             Fragmento.origen == OrigenFragmento.EMPRESA,
+            filtro_version(version),
         )
     )
     tipos = TipoFuenteConocimiento
@@ -175,7 +166,10 @@ async def resumen(contexto: ContextoDep, session: SessionDep) -> ResumenConocimi
 async def listar(contexto: ContextoDep, session: SessionDep) -> list[FuenteConocimiento]:
     resultado = await session.scalars(
         select(FuenteConocimiento)
-        .where(FuenteConocimiento.organizacion_id == contexto.organizacion_id)
+        .where(
+            FuenteConocimiento.organizacion_id == contexto.organizacion_id,
+            filtro_version(await version_activa(session, contexto.organizacion_id)),
+        )
         .order_by(FuenteConocimiento.tipo, FuenteConocimiento.titulo)
     )
     return list(resultado)
@@ -195,18 +189,32 @@ async def cargar(
     """
     base = await _leer_base(archivo)
 
-    # Una sola transacción: borrar la versión anterior (y sus fragmentos, por la clave
-    # foránea), insertar la nueva y crear el trabajo de indexación.
-    await session.execute(
-        delete(FuenteConocimiento).where(
-            FuenteConocimiento.organizacion_id == contexto.organizacion_id
+    # No retirar fuentes/fragmentos activos hasta que el indice nuevo este listo.
+    from analizador.models import Organizacion
+
+    await session.scalar(
+        select(Organizacion).where(Organizacion.id == contexto.organizacion_id).with_for_update()
+    )
+    anteriores = list(
+        await session.scalars(
+            select(FuenteConocimiento.id).where(
+                FuenteConocimiento.organizacion_id == contexto.organizacion_id,
+                filtro_version(await version_activa(session, contexto.organizacion_id)),
+            )
         )
     )
-    session.add_all(_fuentes(base, contexto.organizacion_id))
     trabajo = TrabajoProcesamiento(
-        organizacion_id=contexto.organizacion_id, tipo=TipoTrabajo.INDEXACION
+        id=uuid.uuid4(), organizacion_id=contexto.organizacion_id, tipo=TipoTrabajo.INDEXACION
     )
     session.add(trabajo)
+    session.add(
+        CambioConocimiento(
+            organizacion_id=contexto.organizacion_id,
+            trabajo_id=trabajo.id,
+            datos=base.model_dump(mode="json"),
+            fuentes_anteriores=sorted(str(i) for i in anteriores),
+        )
+    )
     await session.commit()
 
     await _encolar_indexacion(publicador, trabajo.id)
@@ -221,9 +229,44 @@ async def reindexar(
     contexto: AdminDep, session: SessionDep, publicador: PublicadorDep
 ) -> TrabajoProcesamiento:
     """Vuelve a indexar la base ya cargada, por ejemplo tras un fallo de la indexación."""
+    from analizador.models import Organizacion
+
+    await session.scalar(
+        select(Organizacion).where(Organizacion.id == contexto.organizacion_id).with_for_update()
+    )
+    pendiente = await session.scalar(
+        select(CambioConocimiento)
+        .join(TrabajoProcesamiento, TrabajoProcesamiento.id == CambioConocimiento.trabajo_id)
+        .where(
+            CambioConocimiento.organizacion_id == contexto.organizacion_id,
+            CambioConocimiento.estado == "pendiente",
+            TrabajoProcesamiento.estado == EstadoTrabajo.FALLIDO,
+        )
+        .order_by(CambioConocimiento.secuencia.desc())
+        .limit(1)
+    )
+    if pendiente:
+        trabajo_previo = await session.get(TrabajoProcesamiento, pendiente.trabajo_id)
+        if trabajo_previo is None:
+            raise HTTPException(409, "Trabajo de indexacion no encontrado")
+        if pendiente.documento_id:
+            from analizador.models import DocumentoEmpresa
+
+            documento = await session.get(DocumentoEmpresa, pendiente.documento_id)
+            if documento:
+                documento.estado = "indexando"
+        trabajo_previo.estado = EstadoTrabajo.EN_COLA
+        trabajo_previo.error = None
+        trabajo_previo.intentos = 0
+        await session.commit()
+        await _encolar_indexacion(publicador, trabajo_previo.id)
+        return trabajo_previo
     hay_base = await session.scalar(
         select(FuenteConocimiento.id)
-        .where(FuenteConocimiento.organizacion_id == contexto.organizacion_id)
+        .where(
+            FuenteConocimiento.organizacion_id == contexto.organizacion_id,
+            filtro_version(await version_activa(session, contexto.organizacion_id)),
+        )
         .limit(1)
     )
     if hay_base is None:

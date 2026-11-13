@@ -65,7 +65,21 @@ async def _reevaluacion(trabajo: TrabajoProcesamiento, _grafo: Any) -> None:
 
 async def _indexacion(trabajo: TrabajoProcesamiento, _grafo: Any) -> None:
     # F-02: fragmentar la base de conocimiento, vectorizarla y guardarla en pgvector.
-    await indexacion.indexar(trabajo)
+    operacion = (trabajo.detalle or {}).get("operacion")
+    if operacion == "documento":
+        from analizador.pipeline.documentos import procesar as procesar_documento
+
+        await procesar_documento(trabajo)
+    elif operacion == "chat":
+        from analizador.pipeline import indexacion_pliego
+
+        await indexacion_pliego.ejecutar(_estado(trabajo))
+        async with get_sessionmaker()() as session:
+            actual = await session.get(TrabajoProcesamiento, trabajo.id)
+            if actual is None or not ((actual.detalle or {}).get("chat") or {}).get("indexado"):
+                raise AnalisisError("No se pudo indexar el chat; puede reintentarlo.")
+    else:
+        await indexacion.indexar(trabajo)
 
 
 HANDLERS: dict[TipoTrabajo, Handler] = {
@@ -95,6 +109,24 @@ async def _mensaje_de_fallo(trabajo_id: uuid.UUID, exc: BaseException) -> str:
 
 async def _fallar(trabajo: TrabajoProcesamiento, tipo: TipoTrabajo, mensaje: str) -> None:
     await progreso.fallar(trabajo.id, mensaje)
+    if tipo == TipoTrabajo.INDEXACION:
+        from sqlalchemy import select
+
+        from analizador.models import CambioConocimiento, DocumentoEmpresa
+
+        async with get_sessionmaker()() as session:
+            cambio = await session.scalar(
+                select(CambioConocimiento).where(CambioConocimiento.trabajo_id == trabajo.id)
+            )
+            documento_id = cambio.documento_id if cambio else None
+            if not cambio and (trabajo.detalle or {}).get("operacion") == "documento":
+                documento_id = uuid.UUID((trabajo.detalle or {})["documento_id"])
+            if documento_id and (cambio is None or cambio.estado != "obsoleto"):
+                documento = await session.get(DocumentoEmpresa, documento_id)
+                if documento:
+                    documento.estado = "indexacion_fallida" if cambio else "fallido"
+                    await session.commit()
+
     if tipo == TipoTrabajo.ANALISIS and trabajo.licitacion_id is not None:
         await progreso.marcar_licitacion(trabajo.licitacion_id, EstadoLicitacion.FALLIDA)
 
@@ -109,6 +141,25 @@ async def procesar(
         await mensaje.reject(requeue=False)
         return
 
+    # El lock transaccional se libera incluso si el proceso se interrumpe.
+    from sqlalchemy import text
+
+    from analizador.db.session import get_engine
+
+    async with get_engine().begin() as conexion:
+        clave = int.from_bytes(trabajo_id.bytes[:8], "big", signed=True)
+        adquirido = await conexion.scalar(
+            text("SELECT pg_try_advisory_xact_lock(:clave)"), {"clave": clave}
+        )
+        if not adquirido:
+            await mensaje.ack()
+            return
+        await _procesar_exclusivo(mensaje, tipo, grafo_analisis, trabajo_id)
+
+
+async def _procesar_exclusivo(
+    mensaje: AbstractIncomingMessage, tipo: TipoTrabajo, grafo_analisis: Any, trabajo_id: uuid.UUID
+) -> None:
     trabajo = await _leer_trabajo(trabajo_id)
     if trabajo is None or trabajo.estado == EstadoTrabajo.COMPLETADO:
         # Mensaje huérfano o entregado dos veces: no hay nada que repetir.

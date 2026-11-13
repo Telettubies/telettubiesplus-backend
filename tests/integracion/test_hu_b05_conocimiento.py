@@ -7,16 +7,19 @@ from typing import Any
 
 import httpx
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from analizador.contratos.conocimiento import BaseConocimiento
 from analizador.core.config import get_settings
-from analizador.models import Fragmento, FuenteConocimiento, TrabajoProcesamiento
+from analizador.models import (
+    CambioConocimiento,
+    FuenteConocimiento,
+    TrabajoProcesamiento,
+)
 from analizador.models.enums import (
     EstadoTrabajo,
-    OrigenFragmento,
     Rol,
-    TipoFuenteConocimiento,
     TipoTrabajo,
 )
 from tests.apoyo import Identidad, PublicadorFalso, agregar_miembro, crear_organizacion
@@ -69,20 +72,17 @@ async def test_un_archivo_valido_se_guarda_asociado_a_la_organizacion(
 
     assert respuesta.status_code == 202
     resumen = respuesta.json()["resumen"]
-    assert resumen["cargada"] is True
-    assert resumen["empresa"] == "Soluciones Andinas de Ingeniería S.A.S."
-    assert (resumen["contratos"], resumen["personas"]) == (3, 2)
-    assert (resumen["certificaciones"], resumen["capacidades"]) == (2, 2)
-    assert resumen["anios_financieros"] == 2
-
-    fuentes = await _fuentes(sesion, admin)
-    assert len(fuentes) == 1 + 2 + 3 + 2 + 2 + 2  # empresa, financiero, contratos, personas…
-    contrato = next(f for f in fuentes if f.titulo.startswith("C-2023-014"))
-    assert contrato.tipo == TipoFuenteConocimiento.CONTRATO
-    assert contrato.datos is not None
-    assert contrato.datos["valor_cop"] == 2450000000
-    assert contrato.datos["fecha_fin"] == "2024-01-31"
-    assert contrato.datos["codigos_unspsc"] == ["81111500", "81112200", "43232300"]
+    assert resumen["cargada"] is False
+    assert resumen["indexacion"]["estado"] == "en_cola"
+    cambio = await sesion.scalar(
+        select(CambioConocimiento).where(
+            CambioConocimiento.organizacion_id == admin.organizacion_id
+        )
+    )
+    assert cambio is not None and cambio.datos == BaseConocimiento.model_validate(
+        EJEMPLO
+    ).model_dump(mode="json")
+    assert await _fuentes(sesion, admin) == []
 
 
 async def test_el_ejemplo_publicado_cumple_el_contrato(
@@ -101,8 +101,9 @@ async def test_la_base_la_ven_todos_los_miembros_de_la_organizacion(
     resumen = await cliente.get("/api/conocimiento", headers=revisor.cabeceras)
     fuentes = await cliente.get("/api/conocimiento/fuentes", headers=revisor.cabeceras)
 
-    assert resumen.status_code == 200 and resumen.json()["contratos"] == 3
-    assert len(fuentes.json()) == 12
+    assert resumen.status_code == 200 and resumen.json()["contratos"] == 0
+    assert resumen.json()["indexacion"]["estado"] == "en_cola"
+    assert fuentes.json() == []
 
 
 async def test_sin_base_cargada_el_resumen_lo_indica(
@@ -242,33 +243,23 @@ async def test_un_archivo_demasiado_grande_indica_el_limite(
 async def test_una_nueva_carga_reemplaza_la_anterior_sin_mezclar_versiones(
     cliente: httpx.AsyncClient, sesion: AsyncSession, admin: Identidad
 ) -> None:
-    await _cargar(cliente, admin, EJEMPLO)
-    [contrato] = [f for f in await _fuentes(sesion, admin) if f.titulo.startswith("C-2023-014")]
-    sesion.add(
-        Fragmento(
-            organizacion_id=admin.organizacion_id,
-            origen=OrigenFragmento.EMPRESA,
-            fuente_conocimiento_id=contrato.id,
-            texto="fragmento de la versión anterior",
-            embedding=[1.0, 0.0],
+    from analizador.api.routers.conocimiento import _fuentes as crear_fuentes
+    from analizador.contratos.conocimiento import BaseConocimiento
+
+    anteriores = crear_fuentes(BaseConocimiento.model_validate(EJEMPLO), admin.organizacion_id)
+    sesion.add_all(anteriores)
+    await sesion.commit()
+    ids_antes = {f.id for f in anteriores}
+    nueva = _base(contratos=[], personas=[])
+    respuesta = await _cargar(cliente, admin, nueva)
+    assert respuesta.status_code == 202
+    assert {f.id for f in await _fuentes(sesion, admin)} == ids_antes
+    cambio = await sesion.scalar(
+        select(CambioConocimiento).where(
+            CambioConocimiento.organizacion_id == admin.organizacion_id
         )
     )
-    await sesion.commit()
-
-    nueva = _base(
-        contratos=[EJEMPLO["contratos"][0]], personas=[], certificaciones=[], capacidades=[]
-    )
-    nueva["empresa"]["razon_social"] = "Nueva Razón Social S.A.S."
-    respuesta = await _cargar(cliente, admin, nueva)
-
-    assert respuesta.status_code == 202
-    resumen = respuesta.json()["resumen"]
-    assert resumen["empresa"] == "Nueva Razón Social S.A.S."
-    assert (resumen["contratos"], resumen["personas"], resumen["certificaciones"]) == (1, 0, 0)
-    assert len(await _fuentes(sesion, admin)) == 1 + 2 + 1
-    # Los fragmentos de la versión anterior desaparecen con sus fuentes.
-    assert resumen["fragmentos_indexados"] == 0
-    assert await sesion.scalar(select(func.count()).select_from(Fragmento)) == 0
+    assert cambio is not None and cambio.datos == nueva
 
 
 async def test_si_la_carga_nueva_falla_se_conserva_la_anterior(
@@ -303,9 +294,25 @@ async def test_la_carga_de_una_organizacion_no_toca_la_de_otra(
 
     await _cargar(cliente, admin, _base(contratos=[]))
 
-    assert len(await _fuentes(sesion, otra)) == 12
+    assert await _fuentes(sesion, otra) == []
+    assert (
+        await sesion.scalar(
+            select(CambioConocimiento.id).where(
+                CambioConocimiento.organizacion_id == otra.organizacion_id
+            )
+        )
+        is not None
+    )
     resumen = (await cliente.get("/api/conocimiento", headers=otra.cabeceras)).json()
-    assert resumen["contratos"] == 3
+    assert resumen["contratos"] == 0
+    assert (
+        await sesion.scalar(
+            select(CambioConocimiento.id).where(
+                CambioConocimiento.organizacion_id == admin.organizacion_id
+            )
+        )
+        is not None
+    )
 
 
 # --- Criterio 4: tras guardar se publica un trabajo en la cola de indexación -----------------
@@ -342,7 +349,15 @@ async def test_si_la_cola_falla_la_base_queda_guardada_y_la_indexacion_en_error_
     assert respuesta.status_code == 503
     assert "se guardó" in respuesta.json()["detail"]
     resumen = (await cliente.get("/api/conocimiento", headers=admin.cabeceras)).json()
-    assert resumen["contratos"] == 3
+    assert resumen["contratos"] == 0
+    assert (
+        await sesion.scalar(
+            select(CambioConocimiento.id).where(
+                CambioConocimiento.organizacion_id == admin.organizacion_id
+            )
+        )
+        is not None
+    )
     assert resumen["indexacion"]["estado"] == "fallido"
     assert resumen["indexacion"]["error"]
 
@@ -364,7 +379,7 @@ async def test_reindexar_exige_una_base_cargada_y_ninguna_indexacion_en_curso(
 
     trabajo = await sesion.scalar(select(TrabajoProcesamiento))
     assert trabajo is not None
-    trabajo.estado = EstadoTrabajo.COMPLETADO
+    trabajo.estado = EstadoTrabajo.FALLIDO
     await sesion.commit()
     assert (
         await cliente.post("/api/conocimiento/indexacion", headers=admin.cabeceras)

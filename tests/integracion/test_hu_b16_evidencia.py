@@ -307,13 +307,10 @@ async def test_sin_base_de_conocimiento_indexada_no_se_gastan_embeddings(
     analisis = await crear_analisis(sesion)
     await agregar_requisito(sesion, analisis, numeral="3", texto="Calidad.", items=[ITEM_CALIDAD])
 
-    await evidencia.ejecutar(analisis.estado)
-
+    with pytest.raises(AnalisisError, match="indice compatible"):
+        await evidencia.ejecutar(analisis.estado)
     [item] = (await _items(sesion)).values()
-    assert item.candidatos == [] and consultas.lotes == []
-    trabajo = await sesion.get(TrabajoProcesamiento, analisis.trabajo_id)
-    assert trabajo is not None and trabajo.detalle is not None
-    assert trabajo.detalle["evidencia"]["base_indexada"] is False
+    assert item.candidatos is None and consultas.lotes == []
 
 
 async def test_los_fragmentos_de_otro_modelo_de_embeddings_se_ignoran(
@@ -390,11 +387,12 @@ async def test_el_trabajo_registra_cuantos_items_tienen_evidencia(
     trabajo = await sesion.get(TrabajoProcesamiento, analisis.trabajo_id)
     assert trabajo is not None
     assert trabajo.detalle == {
+        "version_empresa": "legacy",
         "evidencia": {
             "items": 2,
             "con_evidencia": 2,
             "sin_evidencia": 0,
             "base_indexada": True,
             "rerank": False,
-        }
+        },
     }

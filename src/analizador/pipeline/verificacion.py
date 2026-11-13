@@ -28,6 +28,7 @@ from sqlalchemy.orm import selectinload
 from analizador.contratos.extraccion import CampoComparable
 from analizador.contratos.verificacion import VerificacionItem
 from analizador.core.config import get_settings
+from analizador.db.conocimiento import fijar_version, filtro_version, version_activa
 from analizador.db.session import get_sessionmaker
 from analizador.integrations import anthropic_client
 from analizador.integrations.anthropic_client import Uso
@@ -98,12 +99,15 @@ _SIN_ARREGLO = (
 # --- Datos estructurados de la empresa --------------------------------------------------------
 
 
-async def datos_de_la_empresa(organizacion_id: uuid.UUID) -> DatosEmpresa:
+async def datos_de_la_empresa(
+    organizacion_id: uuid.UUID, version: str | None = None
+) -> DatosEmpresa:
     async with get_sessionmaker()() as session:
         fuentes = list(
             await session.scalars(
                 select(FuenteConocimiento).where(
                     FuenteConocimiento.organizacion_id == organizacion_id,
+                    filtro_version(version or await version_activa(session, organizacion_id)),
                     FuenteConocimiento.tipo.in_(
                         [TipoFuenteConocimiento.FINANCIERO, TipoFuenteConocimiento.CONTRATO]
                     ),
@@ -275,7 +279,25 @@ async def ejecutar(estado: EstadoAnalisis) -> None:
             )
         )
 
-    datos = await datos_de_la_empresa(uuid.UUID(estado["organizacion_id"]))
+    async with get_sessionmaker()() as session:
+        version = await fijar_version(
+            session, uuid.UUID(estado["trabajo_id"]), uuid.UUID(estado["organizacion_id"])
+        )
+    async with get_sessionmaker()() as session:
+        existe_base = await session.scalar(
+            select(FuenteConocimiento.id)
+            .where(
+                FuenteConocimiento.organizacion_id == uuid.UUID(estado["organizacion_id"]),
+                filtro_version(version),
+            )
+            .limit(1)
+        )
+        if existe_base is None:
+            raise AnalisisError(
+                "No hay una base empresarial activa. "
+                "Complete su carga e indexacion antes de evaluar cumplimiento."
+            )
+    datos = await datos_de_la_empresa(uuid.UUID(estado["organizacion_id"]), version)
     para_el_modelo: list[tuple[Item, list[dict[str, Any]]]] = []
     for item in pendientes:
         if item.tipo_verificacion == TipoVerificacion.NUMERICO and item.parametros:

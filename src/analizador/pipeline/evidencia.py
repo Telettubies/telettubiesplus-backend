@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 
 from analizador.core.config import get_settings
 from analizador.db.busqueda import fragmentos_cercanos
+from analizador.db.conocimiento import fijar_version, filtro_version
 from analizador.db.session import get_sessionmaker
 from analizador.integrations import nvidia
 from analizador.models import Fragmento, FuenteConocimiento, Item, Requisito
@@ -65,7 +66,11 @@ async def _reordenar(consulta: str, candidatos: list[dict[str, Any]]) -> list[di
 
 
 async def _buscar(
-    organizacion_id: uuid.UUID, modelo: str, descripcion: str, vector: list[float]
+    organizacion_id: uuid.UUID,
+    modelo: str,
+    descripcion: str,
+    vector: list[float],
+    version_empresa: str,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
     async with get_sessionmaker()() as session:
@@ -76,6 +81,7 @@ async def _buscar(
             origen=OrigenFragmento.EMPRESA,
             limite=settings.evidencia_candidatos,
             modelo=modelo,
+            version_empresa=version_empresa,
         )
         relevantes = [
             (fragmento, distancia)
@@ -126,6 +132,9 @@ async def ejecutar(estado: EstadoAnalisis) -> None:
     modelo = settings.nvidia_model_embeddings
 
     async with get_sessionmaker()() as session:
+        version_empresa = await fijar_version(
+            session, uuid.UUID(estado["trabajo_id"]), organizacion_id
+        )
         filas = await session.execute(
             _cualitativos(licitacion_id)
             .with_only_columns(Item.id, Item.descripcion)
@@ -139,8 +148,13 @@ async def ejecutar(estado: EstadoAnalisis) -> None:
                 await session.scalar(
                     select(func.count())
                     .select_from(Fragmento)
+                    .join(
+                        FuenteConocimiento,
+                        Fragmento.fuente_conocimiento_id == FuenteConocimiento.id,
+                    )
                     .where(
                         Fragmento.organizacion_id == organizacion_id,
+                        filtro_version(version_empresa),
                         Fragmento.origen == OrigenFragmento.EMPRESA,
                         Fragmento.modelo_embedding == modelo,
                         Fragmento.embedding.is_not(None),
@@ -152,10 +166,20 @@ async def ejecutar(estado: EstadoAnalisis) -> None:
     if pendientes and not modelo:
         raise AnalisisError(MENSAJE_SIN_MODELO)
     if pendientes and not indexados:
-        # Sin base de conocimiento indexada no hay nada que buscar: no se gastan embeddings.
-        logger.warning("Licitación %s: la organización no tiene base indexada", licitacion_id)
-        await _guardar({identificador: [] for identificador, _ in pendientes})
-        pendientes = []
+        # No se evaluo ningun dato: permitir que el reintento adopte una base lista nueva.
+        async with get_sessionmaker()() as session:
+            from analizador.models import TrabajoProcesamiento
+
+            trabajo = await session.get(TrabajoProcesamiento, uuid.UUID(estado["trabajo_id"]))
+            if trabajo:
+                detalle = dict(trabajo.detalle or {})
+                detalle.pop("version_empresa", None)
+                trabajo.detalle = detalle
+                await session.commit()
+        raise AnalisisError(
+            "La base empresarial no tiene un indice compatible listo. "
+            "Complete su indexacion antes de evaluar cumplimiento."
+        )
 
     for inicio in range(0, len(pendientes), settings.embeddings_lote):
         lote = pendientes[inicio : inicio + settings.embeddings_lote]
@@ -168,7 +192,9 @@ async def ejecutar(estado: EstadoAnalisis) -> None:
         # Se guarda lote a lote: un reintento no vuelve a pagar los ítems ya resueltos.
         await _guardar(
             {
-                identificador: await _buscar(organizacion_id, modelo or "", descripcion, vector)
+                identificador: await _buscar(
+                    organizacion_id, modelo or "", descripcion, vector, version_empresa
+                )
                 for (identificador, descripcion), vector in zip(lote, vectores, strict=True)
             }
         )

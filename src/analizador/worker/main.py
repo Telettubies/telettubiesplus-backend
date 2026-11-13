@@ -41,7 +41,7 @@ async def suscribir(canal: AbstractChannel, grafo_analisis: Any) -> None:
     R-09 y HU-B09: la VM tiene 2 vCPU y 8 GB, así que solo corre un análisis a la vez. El
     prefetch de 1 por canal hace que RabbitMQ no entregue otro mensaje hasta confirmar el actual.
     """
-    await canal.set_qos(prefetch_count=MENSAJES_SIMULTANEOS)
+    await canal.set_qos(prefetch_count=MENSAJES_SIMULTANEOS, global_=True)
     _, colas = await topologia.declarar(canal)
     for tipo, cola in colas.items():
         await cola.consume(partial(procesar, tipo=tipo, grafo_analisis=grafo_analisis))

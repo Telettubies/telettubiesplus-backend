@@ -81,6 +81,9 @@ class Settings(BaseSettings):
     nvidia_espera_base_segundos: float = Field(default=2.0, gt=0)
     nvidia_espera_maxima_segundos: float = Field(default=60.0, gt=0)
 
+    max_documentos_empresa: int = Field(default=100, ge=1, le=10000)
+    documento_empresa_max_paginas: int = Field(default=50, ge=1, le=600)
+
     # --- Lectura y OCR (HU-B10, P-09) ---
     ocr_idioma: str = "spa"
     ocr_dpi: int = Field(default=200, ge=72, le=400)

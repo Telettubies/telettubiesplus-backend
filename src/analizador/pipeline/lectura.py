@@ -209,9 +209,15 @@ def leer_paginas(contenido: bytes, settings: Settings | None = None) -> list[Pag
     return paginas
 
 
-async def leer_pdf(contenido: bytes, transcribir: Transcriptor | None = None) -> list[Pagina]:
+async def leer_pdf(
+    contenido: bytes, transcribir: Transcriptor | None = None, *, limite_paginas: int | None = None
+) -> list[Pagina]:
     """Lee el pliego completo. `transcribir` es el respaldo con visión para páginas ilegibles."""
     settings = get_settings()
+    if limite_paginas is not None:
+        settings = settings.model_copy(
+            update={"max_pdf_paginas": min(settings.max_pdf_paginas, limite_paginas)}
+        )
     paginas = await asyncio.to_thread(leer_paginas, contenido, settings)
 
     con_vision = 0
