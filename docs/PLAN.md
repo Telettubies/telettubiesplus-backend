@@ -64,9 +64,10 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 21 | HU-B19 | Calcular brechas, recomendación y justificación | hecha | laqg | 8db204a, eb5ccf8 | |
 | 22 | HU-B21 | Entregar el resultado y el acceso al PDF | hecha; integración frontend pendiente | laqg | ee6f7fe, 8bf0dd2 | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
+| 24 | HU-B02 | Invitar un usuario a la organización | hecha | laqg | f91e973, 4b5e190 | |
 
-Fuera de este plan: HU-B02, B03, B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Parte de
-su código ya existe en el andamiaje; solo se toca para garantizar el aislamiento (HU-B04).
+Fuera de este plan: HU-B03, B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Las Should y
+Could que se implementan se añaden a la tabla con su número de orden.
 
 Dependencias que fijan el orden: HU-B01 antes de todo lo protegido; T-01 antes de HU-B04 y
 HU-B07 (rutas y URL del almacenamiento); HU-B26 antes de las historias que llaman a NVIDIA;
@@ -151,3 +152,5 @@ Se completa al cerrar cada historia.
   determinista de saber qué contratos son pertinentes: el ítem pasa a revisión cuando alcanza
   lo exigido, lo que deja la recomendación condicionada hasta que alguien lo confirme.
 - **Chat (HU-B24).** Los límites están aplicados, pero nada registra todavía las preguntas.
+- **Correos con cuenta (HU-B02).** Supabase no reinvita un correo que ya tiene cuenta (por
+  ejemplo, de otra organización): la API responde 409. Agregar usuarios existentes queda pendiente.
