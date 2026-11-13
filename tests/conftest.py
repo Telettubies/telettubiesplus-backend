@@ -10,9 +10,9 @@ ENTORNO_TEST = {
     "APP_ENV": "test",
     "DATABASE_URL": "postgresql+asyncpg://test:test@localhost:5432/test",
     "RABBITMQ_URL": "amqp://test:test@localhost:5672/",
-    "AWS_REGION": "us-east-1",
-    "S3_BUCKET": "bucket-test",
     "SUPABASE_URL": "https://proyecto-test.supabase.co",
+    "SUPABASE_SERVICE_ROLE_KEY": "clave-de-servicio-de-prueba",
+    "SUPABASE_STORAGE_BUCKET": "pliegos-test",
     "MAX_PDF_MB": "1",
 }
 

@@ -28,6 +28,14 @@ class Rol(StrEnum):
     REVISOR = "revisor"
 
 
+class AccionMiembro(StrEnum):
+    """Cambios de membresía que quedan auditados (HU-B02, HU-B03, S-05)."""
+
+    INVITACION = "invitacion"
+    CAMBIO_ROL = "cambio_rol"
+    RETIRO = "retiro"
+
+
 class TipoRequisito(StrEnum):
     """Taxonomía del reto (RF-01). Pendiente Q-16 / P-24."""
 
@@ -76,8 +84,12 @@ class EstadoTrabajo(StrEnum):
 
 
 class TipoFuenteConocimiento(StrEnum):
-    """Tipos de fuente de la base de conocimiento (sección 6.3)."""
+    """Tipos de fuente de la base de conocimiento (sección 6.3).
 
+    `empresa` no está en el DAS: guarda los datos generales del oferente (razón social, NIT).
+    """
+
+    EMPRESA = "empresa"
     CONTRATO = "contrato"
     HOJA_DE_VIDA = "hoja_de_vida"
     FINANCIERO = "financiero"
@@ -90,3 +102,26 @@ class OrigenFragmento(StrEnum):
 
     EMPRESA = "empresa"
     PLIEGO = "pliego"
+
+
+class TipoUso(StrEnum):
+    """Acciones que cuentan para las cuotas por organización (S-08, HU-B26)."""
+
+    PREGUNTA_CHAT = "pregunta_chat"
+    OBSERVACION = "observacion"
+
+
+class OrigenPagina(StrEnum):
+    """Cómo se obtuvo el texto de una página del pliego (HU-B10)."""
+
+    DIGITAL = "digital"  # texto extraíble del PDF
+    OCR = "ocr"  # página escaneada leída con Tesseract; conserva las cajas de las palabras
+    VISION = "vision"  # transcrita por el modelo con visión; sin cajas
+    NO_LEIDA = "no_leida"  # ni el OCR ni la visión lograron texto legible
+
+
+class TipoVerificacion(StrEnum):
+    """Cómo se verifica un ítem (P-03, HU-B13, HU-B17)."""
+
+    NUMERICO = "numerico"  # por código, contra un dato estructurado de la empresa
+    CUALITATIVO = "cualitativo"  # lo valora el modelo contra la evidencia recuperada

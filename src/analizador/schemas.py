@@ -8,8 +8,9 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from analizador.contratos.decision import EstadoMatriz, Recomendacion
 from analizador.models.enums import (
     EstadoCumplimiento,
     EstadoLicitacion,
@@ -35,6 +36,7 @@ class MiembroOut(_Orm):
     usuario_id: uuid.UUID
     email: str
     rol: Rol
+    invitacion_pendiente: bool
     creado_en: datetime
 
 
@@ -63,9 +65,43 @@ class TrabajoOut(_Orm):
     etapa_actual: str | None
     progreso: int
     error: str | None
+    # Cifras del trabajo al terminar; p. ej. fuentes y fragmentos indexados (HU-B06).
+    detalle: dict[str, Any] | None
     creado_en: datetime
     iniciado_en: datetime | None
     finalizado_en: datetime | None
+
+
+class EtapaOut(BaseModel):
+    clave: str
+    nombre: str
+    porcentaje: int
+
+
+class SeccionesProgreso(BaseModel):
+    procesadas: int
+    total: int
+
+
+class ProgresoOut(BaseModel):
+    """Avance del análisis de una licitación, leído de PostgreSQL (HU-B08, ADR-015)."""
+
+    licitacion_id: uuid.UUID
+    estado_licitacion: EstadoLicitacion
+    trabajo_id: uuid.UUID
+    estado: EstadoTrabajo
+    etapa_actual: str | None
+    progreso: int
+    # Secciones del pliego ya procesadas sobre el total; nulo hasta que el pliego se divide.
+    secciones: SeccionesProgreso | None
+    # Mensaje para el usuario cuando el análisis falló; nunca contiene detalles internos.
+    error: str | None
+    intentos: int
+    iniciado_en: datetime | None
+    finalizado_en: datetime | None
+    actualizado_en: datetime
+    # Todas las etapas en orden, para dibujar la línea de avance.
+    etapas: list[EtapaOut]
 
 
 # --- Licitaciones y matriz ---------------------------------------------------
@@ -83,6 +119,8 @@ class LicitacionResumen(_Orm):
 class LicitacionCreada(BaseModel):
     licitacion: LicitacionResumen
     trabajo: TrabajoOut
+    # True si el mismo PDF ya había sido cargado en la organización (HU-B07, P-16).
+    duplicada: bool = False
 
 
 class UbicacionOut(_Orm):
@@ -94,6 +132,8 @@ class UbicacionOut(_Orm):
 class RevisionOut(_Orm):
     id: uuid.UUID
     usuario_id: uuid.UUID
+    # Correo del miembro que revisó, si sigue en la organización (HU-B23, criterio 4).
+    autor_email: str | None = None
     estado_anterior: EstadoCumplimiento
     estado_nuevo: EstadoCumplimiento
     comentario: str
@@ -135,12 +175,95 @@ class LicitacionDetalle(LicitacionResumen):
     requisitos: list[RequisitoOut]
 
 
+class UrlPdfOut(BaseModel):
+    pdf_url_temporal: str
+
+
+class ZonaMatrizOut(BaseModel):
+    pagina: int
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class UbicacionMatrizOut(BaseModel):
+    pagina: int
+    precision: PrecisionUbicacion
+    zonas: list[ZonaMatrizOut]
+
+
+class EvidenciaMatrizOut(BaseModel):
+    fuente_id: str | None
+    fuente_nombre: str | None
+    cita_literal: str
+    cita_verificada: bool
+    similitud: float | None
+
+
+class ItemMatrizOut(BaseModel):
+    id: uuid.UUID
+    requisito_id: uuid.UUID
+    resultado_id: uuid.UUID | None
+    codigo_req: str
+    numeral: str
+    categoria: TipoRequisito
+    texto_requisito_literal: str
+    texto_requisito_verificado: bool | None
+    descripcion_item: str
+    estado: EstadoMatriz
+    estado_propuesto: EstadoCumplimiento | None
+    motivo_revision: str | None
+    es_ambiguo: bool
+    evidencia: EvidenciaMatrizOut | None
+    evidencias: list[EvidenciaMatrizOut]
+    faltante: str | None
+    confianza: float | None
+    ubicacion: UbicacionMatrizOut
+    revisiones: list[RevisionOut]
+
+
+class CoberturaMatrizOut(BaseModel):
+    secciones_procesadas: int
+    secciones_total: int
+    numerales_no_procesados: list[str]
+
+
+class ResultadoMatrizOut(BaseModel):
+    licitacion_id: uuid.UUID
+    nombre: str
+    fecha_carga: datetime
+    pdf_nombre: str
+    pdf_paginas: int | None
+    pdf_url_temporal: str
+    recomendacion: Recomendacion
+    justificacion: str
+    cobertura: CoberturaMatrizOut
+    resumen_estados: dict[EstadoMatriz, int]
+    categorias: dict[TipoRequisito, dict[EstadoMatriz, int]]
+    items: list[ItemMatrizOut]
+    brechas: list[ItemMatrizOut]
+
+
+class ErrorResultadoOut(BaseModel):
+    detail: str
+
+
 # --- Revisión humana (RF-14) ---------------------------------------------------
 
 
 class RevisionIn(BaseModel):
     estado_nuevo: EstadoCumplimiento
     comentario: str = Field(min_length=1, max_length=4000)
+
+    @field_validator("comentario")
+    @classmethod
+    def _comentario_con_texto(cls, valor: str) -> str:
+        # HU-B23: el comentario es obligatorio; solo espacios no cuenta como comentario.
+        valor = valor.strip()
+        if not valor:
+            raise ValueError("El comentario es obligatorio")
+        return valor
 
 
 class RevisionCreada(BaseModel):
@@ -156,3 +279,75 @@ class FuenteConocimientoOut(_Orm):
     tipo: TipoFuenteConocimiento
     titulo: str
     creado_en: datetime
+
+
+class ResumenConocimiento(BaseModel):
+    """Qué hay cargado en la base de conocimiento de la organización (HU-B05, HU-F04)."""
+
+    cargada: bool
+    empresa: str | None
+    cargada_en: datetime | None
+    anios_financieros: int
+    contratos: int
+    personas: int
+    certificaciones: int
+    capacidades: int
+    fragmentos_indexados: int
+    # Último trabajo de indexación (HU-B06); nulo si nunca se cargó la base.
+    indexacion: TrabajoOut | None
+
+
+class ConocimientoCargado(BaseModel):
+    resumen: ResumenConocimiento
+    trabajo: TrabajoOut
+
+
+# --- Límites de uso (HU-B26) ------------------------------------------------------
+
+
+class UsoOut(BaseModel):
+    usados: int
+    cuota: int
+
+
+class LimitesOut(BaseModel):
+    max_pdf_mb: int
+    max_pdf_paginas: int
+    chat_max_caracteres: int
+    # Las cuotas se cuentan en una ventana móvil de estas horas.
+    ventana_horas: int
+    analisis: UsoOut
+    chat: UsoOut
+
+
+# --- Chat (RF-13) -----------------------------------------------------------------
+
+
+class PreguntaIn(BaseModel):
+    pregunta: str = Field(min_length=1)
+
+
+class CitaChatOut(BaseModel):
+    numeral: str
+    pagina: int | None
+
+
+class RespuestaChatOut(BaseModel):
+    """Respuesta del chat de una licitación (HU-B24). Texto plano: nunca se renderiza como HTML."""
+
+    respuesta: str
+    encontrado: bool
+    citas: list[CitaChatOut]
+
+
+class ObservacionIn(BaseModel):
+    requisito_id: uuid.UUID
+
+
+class ObservacionOut(BaseModel):
+    """Borrador de observación para la entidad (HU-B25). El sistema no lo envía."""
+
+    requisito_id: uuid.UUID
+    numeral: str
+    asunto: str
+    texto: str

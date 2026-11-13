@@ -2,7 +2,8 @@
 #
 # Corre en cada Pull Request hacia develop:
 #   1. calidad ........ ruff (lint y formato) y mypy.
-#   2. pruebas ........ pytest (sin servicios externos; ver tests/conftest.py).
+#   2. pruebas ........ pytest: unitarias y de integración contra PostgreSQL + pgvector
+#                       (proveedores externos simulados; ver tests/integracion/conftest.py).
 #   3. migraciones .... alembic upgrade/check/downgrade contra PostgreSQL + pgvector:
 #                       detecta modelos ORM sin su migración y migraciones no reversibles.
 #   4. imagen-docker .. construye la imagen (no la publica) y levanta docker-compose.prod.yml
@@ -53,6 +54,23 @@ jobs:
   pruebas:
     name: Pruebas
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.0-pg17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: analizador_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d analizador_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      # Con la variable definida, las pruebas de integración fallan (no se omiten) si no hay base.
+      TEST_DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/analizador_test
     steps:
       - uses: actions/checkout@v6
 
@@ -63,6 +81,10 @@ jobs:
 
       - name: Instalar dependencias
         run: uv sync --locked
+
+      # Para que la prueba de OCR real (HU-B10) se ejecute en lugar de omitirse.
+      - name: Instalar Tesseract con español
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa
 
       - name: Pytest
         run: uv run pytest --junitxml=reporte-pruebas.xml
@@ -137,7 +159,7 @@ jobs:
           sed -e "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" \
               -e "s/^RABBITMQ_PASSWORD=.*/RABBITMQ_PASSWORD=$(openssl rand -hex 16)/" \
               -e 's/^API_DOMAIN=.*/API_DOMAIN=:80/' \
-              -e 's/^S3_BUCKET=.*/S3_BUCKET=ci/' \
+              -e 's/^SUPABASE_STORAGE_BUCKET=.*/SUPABASE_STORAGE_BUCKET=ci/' \
               -e 's#^SUPABASE_URL=.*#SUPABASE_URL=https://ci.supabase.co#' \
               -e 's/^BACKEND_IMAGE=.*/BACKEND_IMAGE=analizador-backend/' \
               -e 's/^BACKEND_TAG=.*/BACKEND_TAG=ci/' \

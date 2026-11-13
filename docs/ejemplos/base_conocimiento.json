@@ -1,0 +1,137 @@
+{
+  "empresa": {
+    "razon_social": "Soluciones Andinas de Ingeniería S.A.S.",
+    "nit": "900123456-7",
+    "ciudad": "Bogotá D.C.",
+    "representante_legal": "Laura Méndez Rojas"
+  },
+  "financiero": [
+    {
+      "anio": 2025,
+      "indice_liquidez": 2.35,
+      "indice_endeudamiento": 0.42,
+      "razon_cobertura_intereses": 6.8,
+      "capital_trabajo_cop": 1850000000,
+      "patrimonio_cop": 4200000000,
+      "rentabilidad_patrimonio": 0.14,
+      "rentabilidad_activo": 0.08
+    },
+    {
+      "anio": 2024,
+      "indice_liquidez": 2.1,
+      "indice_endeudamiento": 0.47,
+      "razon_cobertura_intereses": 5.2,
+      "capital_trabajo_cop": 1500000000,
+      "patrimonio_cop": 3700000000,
+      "rentabilidad_patrimonio": 0.12,
+      "rentabilidad_activo": 0.07
+    }
+  ],
+  "contratos": [
+    {
+      "id": "C-2023-014",
+      "objeto": "Desarrollo, implementación y soporte de un sistema de información para la gestión documental de la entidad.",
+      "entidad_contratante": "Secretaría Distrital de Hacienda (dato sintético)",
+      "fecha_inicio": "2023-02-01",
+      "fecha_fin": "2024-01-31",
+      "valor_cop": 2450000000,
+      "valor_smmlv": 2112.07,
+      "codigos_unspsc": ["81111500", "81112200", "43232300"],
+      "porcentaje_participacion": 100,
+      "descripcion": "Incluyó levantamiento de requisitos, desarrollo web, migración de 1,2 millones de documentos, capacitación a 300 funcionarios y mesa de ayuda 7x24 durante doce meses."
+    },
+    {
+      "id": "C-2022-031",
+      "objeto": "Prestación de servicios de mesa de ayuda y soporte técnico de primer y segundo nivel para la plataforma tecnológica.",
+      "entidad_contratante": "Instituto Departamental de Salud (dato sintético)",
+      "fecha_inicio": "2022-03-15",
+      "fecha_fin": "2023-03-14",
+      "valor_cop": 980000000,
+      "codigos_unspsc": ["81111800", "81112100"],
+      "porcentaje_participacion": 60,
+      "descripcion": "Ejecutado en unión temporal con participación del 60 %. Atención de 4.500 tiquetes mensuales con un cumplimiento de ANS del 97 %."
+    },
+    {
+      "id": "C-2021-007",
+      "objeto": "Consultoría para el diseño de la arquitectura empresarial y el plan estratégico de tecnologías de la información.",
+      "entidad_contratante": "Alcaldía Municipal de Rionegro (dato sintético)",
+      "fecha_inicio": "2021-06-01",
+      "fecha_fin": "2021-12-15",
+      "valor_cop": 640000000,
+      "codigos_unspsc": ["80101500", "81111700"]
+    }
+  ],
+  "personas": [
+    {
+      "id": "P-001",
+      "nombre": "Camilo Restrepo Vargas (sintético)",
+      "profesion": "Ingeniero de sistemas",
+      "anios_experiencia_general": 14,
+      "titulos": [
+        {"nivel": "pregrado", "titulo": "Ingeniería de Sistemas", "institucion": "Universidad Nacional de Colombia", "anio": 2010},
+        {"nivel": "especialización", "titulo": "Gerencia de Proyectos", "institucion": "Universidad EAN", "anio": 2014}
+      ],
+      "certificaciones": ["PMP", "ITIL 4 Foundation"],
+      "experiencias": [
+        {
+          "cargo": "Gerente de proyecto",
+          "entidad": "Soluciones Andinas de Ingeniería S.A.S.",
+          "fecha_inicio": "2018-01-15",
+          "descripcion": "Dirección de proyectos de desarrollo de software para entidades públicas, con equipos de hasta 25 personas."
+        },
+        {
+          "cargo": "Líder técnico",
+          "entidad": "Consultores TI del Caribe Ltda. (dato sintético)",
+          "fecha_inicio": "2012-03-01",
+          "fecha_fin": "2017-12-20",
+          "descripcion": "Liderazgo técnico en proyectos de integración de sistemas y migración de datos."
+        }
+      ]
+    },
+    {
+      "id": "P-002",
+      "nombre": "Diana Ospina Luna (sintético)",
+      "profesion": "Ingeniera industrial",
+      "anios_experiencia_general": 9,
+      "titulos": [
+        {"nivel": "pregrado", "titulo": "Ingeniería Industrial", "institucion": "Universidad de Antioquia", "anio": 2015},
+        {"nivel": "maestría", "titulo": "Gestión de Tecnologías de la Información", "institucion": "Universidad de los Andes", "anio": 2019}
+      ],
+      "certificaciones": ["Auditor interno ISO 9001:2015"],
+      "experiencias": [
+        {
+          "cargo": "Coordinadora de calidad",
+          "entidad": "Soluciones Andinas de Ingeniería S.A.S.",
+          "fecha_inicio": "2019-08-01",
+          "descripcion": "Responsable del sistema de gestión de calidad y de las pruebas de aceptación de los proyectos."
+        }
+      ]
+    }
+  ],
+  "certificaciones": [
+    {
+      "nombre": "ISO 9001:2015",
+      "entidad_emisora": "ICONTEC",
+      "fecha_expedicion": "2024-05-10",
+      "fecha_vencimiento": "2027-05-09",
+      "alcance": "Diseño, desarrollo, implementación y soporte de soluciones de software."
+    },
+    {
+      "nombre": "ISO/IEC 27001:2022",
+      "entidad_emisora": "Bureau Veritas",
+      "fecha_expedicion": "2025-02-20",
+      "fecha_vencimiento": "2028-02-19",
+      "alcance": "Gestión de la seguridad de la información en los servicios de desarrollo y mesa de ayuda."
+    }
+  ],
+  "capacidades": [
+    {
+      "nombre": "Fábrica de software",
+      "descripcion": "Equipo propio de 40 desarrolladores con metodologías ágiles, integración y despliegue continuos y pruebas automatizadas."
+    },
+    {
+      "nombre": "Mesa de ayuda 7x24",
+      "descripcion": "Centro de soporte con atención los siete días de la semana, herramienta de gestión de tiquetes y acuerdos de nivel de servicio medibles."
+    }
+  ]
+}

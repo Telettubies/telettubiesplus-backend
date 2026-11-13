@@ -1,0 +1,170 @@
+# Plan de implementación del backend
+
+Fuentes: DAS v0.3 (`docs/das.pdf`) e historias de usuario (`docs/hu.pdf`), ambos del 2026-11-11.
+Los identificadores `RF-`, `ADR-`, `P-`, `Q-`, `S-`, `R-` remiten al DAS; `HU-Bxx` al backlog.
+Alcance de este plan: las **21 historias Must de backend**. Las Should y Could quedan para después.
+
+## 1. Decisiones del DAS que se siguen
+
+| Tema | Decisión | Origen |
+| --- | --- | --- |
+| Lenguaje y API | Python 3.12, FastAPI; API (C-02) y worker (C-03) comparten el paquete `analizador` | ADR-003 |
+| Procesamiento asíncrono | RabbitMQ transporta solo identificadores; un mensaje a la vez | ADR-006, ADR-015, R-09 |
+| Orquestación | LangGraph, etapas 1–11 de la sección 5.3, con checkpointer en PostgreSQL para reanudar | ADR-007, P-08 |
+| Estado y progreso | PostgreSQL es la única fuente; el dashboard nunca consulta RabbitMQ | ADR-015 |
+| Persistencia | PostgreSQL con volumen; vectores en pgvector dentro de la misma base | ADR-009, ADR-013 |
+| Autenticación | Token de Supabase verificado en cada petición (firma, expiración, emisor, audiencia) | ADR-008, S-04 |
+| Autorización | Organización y rol solo desde la tabla `miembros`; todo filtra por organización | ADR-014, S-03 |
+| Modelos de IA | NVIDIA: filtro, embeddings, chat. Anthropic: extracción, verificación, redacción. Nombres por entorno | ADR-002, P-19 |
+| Extracción | Se recorre todo el pliego sección por sección; la búsqueda vectorial no extrae requisitos | ADR-012 |
+| Despliegue | Docker Compose, mismo entorno en local y en la VM; solo el proxy publica puertos | ADR-016, S-01 |
+| Seguridad mínima | S-01 a S-08: secretos por entorno, documentos tratados como datos, límites de uso | 6.6 |
+| Taxonomía y estados | Los del reto: habilitante, técnico, experiencia, plazo; cumple, cumple parcialmente, no cumple | RF-01, RF-04 |
+
+Convenciones heredadas del andamiaje: SQLAlchemy 2 asíncrono, Alembic, enumeraciones como
+`VARCHAR + CHECK`, `uv` para dependencias, `ruff` y `mypy --strict`, identificadores en español.
+
+## 2. Decisiones tomadas con el responsable del backend (2026-11-12)
+
+| Tema | Decisión | Relación con el DAS |
+| --- | --- | --- |
+| Flujo de ramas | Trabajo en `sar`; un PR `sar → develop` por historia, fusionado cuando el CI pasa. `main` no se toca (dispara el despliegue) | — |
+| Contratos de datos | Se definen en `src/analizador/contratos/` con un JSON sintético de ejemplo | P-18 (no aprobada) |
+| Lectura de PDF | PyMuPDF (texto, coordenadas, render) y pdfplumber (tablas) | Etapa 1 [P]; R-13 por la licencia AGPL |
+| OCR | Tesseract en español; Claude con visión como respaldo. Se implementa dentro de HU-B10 | P-09 (no aprobada) |
+| Reglas de recomendación | Estricta para la demo (ver sección 5) | P-05, Q-04, confirmadas para la demo |
+| Almacenamiento de PDF | Supabase Storage, bucket privado, por API REST. Confirmada por el equipo el 2026-11-12 | **Reemplaza ADR-005 (AWS S3)**; falta reflejarlo en el DAS v0.4 |
+
+## 3. Orden de implementación y seguimiento
+
+Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas transversales.
+
+| # | Ítem | Descripción | Estado | Rama | Commit | PR |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | T-00 | Plan, convenciones, pruebas de integración con PostgreSQL, errores, OpenAPI exportado | hecha | sar | c553b72…f9c6487 | #6 |
+| 2 | HU-B01 | Verificar identidad y resolver organización y rol | hecha | sar | facdfab | #7 |
+| 3 | T-01 | Migrar el almacenamiento de S3 a Supabase Storage | hecha | sar | acb433d, 551d0b0 | #8 |
+| 4 | HU-B04 | Aislar los datos de cada organización | hecha | sar | 537dbbe, cf71ac0 | #9 |
+| 5 | HU-B07 | Cargar un pliego para análisis | hecha | sar | 8fe947d, a265a6e | #10 |
+| 6 | HU-B08 | Consultar el progreso de un análisis | hecha | sar | e138f8a | #11 |
+| 7 | HU-B09 | Orquestar el pipeline y tolerar fallos | hecha | sar | 501ae68, 91e3796 | #12 |
+| 8 | HU-B26 | Limitar el uso para proteger créditos y presupuesto | hecha | sar | 7fef804, ae25c67 | #13 |
+| 9 | HU-B05 | Cargar la base de conocimiento estructurada | hecha | sar | 7af67da, b678f1a, 1b85d41 | #14 |
+| 10 | HU-B06 | Indexar los documentos de la empresa | hecha | sar | a98eff5, 4bd01d3 | #15 |
+| 11 | HU-B10 | Leer el texto del pliego, incluidas páginas escaneadas | hecha | sar | b5e06e2, bfb9b3e | #16 |
+| 12 | HU-B11 | Dividir el pliego en secciones con su numeral | hecha | sar | 2e7690a, 50bb6b5 | #17 |
+| 13 | HU-B12 | Filtrar secciones sin requisitos | hecha | sar | 5505238, 7671c7c | #18 |
+| 14 | HU-B13 | Extraer y atomizar requisitos | hecha | sar | 8141fe0, 3336c7f | #19 |
+| 15 | HU-B14 | Comprobar la cobertura del pliego | hecha | sar | 0830e28, 1703aa0 | #20 |
+| 16 | HU-B15 | Localizar cada requisito en el PDF | hecha | sar | bc46c21, 2ff4a28 | #21 |
+| 17 | HU-B16 | Recuperar evidencia de la base de conocimiento | hecha | sar | 65f418a, bc2631e | #22 |
+| 18 | HU-B17 | Verificar el cumplimiento de cada ítem | hecha | sar | 073cac9, ee945fe | #23 |
+| 19 | HU-B18 | Validar que las citas existen en la fuente | hecha | sar | ab07bd9, a17aa67 | #24 |
+| 20 | HU-B20 | Enviar a revisión los ítems ambiguos o dudosos | hecha | laqg | 325aa93, f023046 | |
+| 21 | HU-B19 | Calcular brechas, recomendación y justificación | hecha | laqg | 8db204a, eb5ccf8 | |
+| 22 | HU-B21 | Entregar el resultado y el acceso al PDF | hecha; integración frontend pendiente | laqg | ee6f7fe, 8bf0dd2 | |
+| 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
+| 24 | HU-B02 | Invitar un usuario a la organización | hecha | laqg | f91e973, 4b5e190 | |
+| 25 | HU-B03 | Gestionar miembros y roles | hecha | laqg | 9b4479a, 3f60c1b | |
+| 26 | HU-B22 | Listar las licitaciones de la organización | hecha | laqg | ed22d5c, 162f92a | |
+| 27 | HU-B23 | Registrar la revisión humana y recalcular | hecha | laqg | fcd19bb, d5c9811 | |
+| 28 | HU-B24 | Responder preguntas sobre una licitación | hecha | laqg | 7b5e003, e20f124 | |
+| 29 | HU-B25 | Generar el borrador de una observación | hecha | laqg | 2d1d73e, 8db452c | |
+| 30 | HU-B29 | Exportar la matriz a Excel | hecha | laqg | bdf7451, 373e894 | |
+
+Fuera de este plan: HU-B28 (Could). Las Should y Could que se implementan se añaden a la tabla
+con su número de orden.
+
+Dependencias que fijan el orden: HU-B01 antes de todo lo protegido; T-01 antes de HU-B04 y
+HU-B07 (rutas y URL del almacenamiento); HU-B26 antes de las historias que llaman a NVIDIA;
+HU-B05 y B06 antes de HU-B16; HU-B10 → B11 → B12 → B13 → B14 → B15 en el orden del pipeline;
+HU-B18 y B20 antes de HU-B19 porque la recomendación depende de qué ítems quedan en revisión.
+
+## 4. Conflictos entre las historias y el DAS
+
+| Conflicto | Resolución |
+| --- | --- |
+| **Almacenamiento.** ADR-005 y HU-B27 (criterio 7: rol IAM de la VM) hablan de AWS S3; el equipo ya usa Supabase Storage | Se sigue la decisión del equipo. El criterio 7 de HU-B27 se sustituye por: la clave de servicio de Supabase solo en el backend y por variable de entorno (S-06). ADR-005 debe actualizarse en el DAS v0.4 |
+| **Estado "revisión".** HU-B17 (criterio 1) lo lista como cuarto estado; RF-04 y Q-17 mantienen tres | Se sigue el DAS: la base guarda los tres estados más `requiere_revision` y `motivo_revision`. La API expone `estado: "revision"` cuando aplica y el estado propuesto aparte |
+| **Límite de páginas.** HU-B07 (criterio 3) pide rechazar al subir; S-09 y HU-B10 exigen abrir el PDF solo en el worker | Se sigue el DAS: el tamaño se rechaza al subir; el exceso de páginas falla en la etapa 1 con un mensaje que indica el límite |
+| **Duplicados por hash.** HU-B07 (criterio 4) depende de P-16, no aprobada, y dice omitirlo en ese caso | Se implementa solo el hash del PDF por organización, porque HU-F05 (Must) lo espera y protege el presupuesto (RC-02). No se implementa la caché de fragmentos del pliego |
+
+## 5. Supuestos
+
+1. **Reglas de recomendación (Q-04, confirmadas para la demo).** En este orden: (a) hay ítems en revisión, secciones sin
+   procesar o ningún ítem extraído → `condicionada`; (b) algún ítem habilitante en *no cumple* o
+   *cumple parcialmente* → `no_presentarse`; (c) cualquier otra brecha → `presentarse_con_riesgo`;
+   (d) sin brechas → `presentarse`.
+2. **Selección de organización.** `X-Organizacion-Id` solo elige entre membresías ya verificadas
+   en PostgreSQL (ADR-014 admite varias organizaciones por usuario). Nunca concede acceso.
+3. **Vectores.** La columna de embeddings no fija dimensión y la búsqueda es exacta, sin índice,
+   porque el modelo sigue abierto (P-10). Cada fragmento guarda el modelo con el que se vectorizó.
+4. **Base de conocimiento.** Solo carga estructurada en JSON (Q-05). No se suben hojas de vida en PDF.
+5. **Modelos.** Todos los nombres vienen del entorno, sin valores por defecto en el código (P-10, P-19).
+6. **Valores sin decidir** (P-23, Q-12, Q-14): tamaño y páginas máximas, cuotas, SMMLV y umbrales
+   son configuración obligatoria o con valor documentado en `.env.example`; no se fijan en el código.
+7. **Pruebas.** Ninguna prueba llama a Anthropic, NVIDIA ni Supabase: se simulan en el borde de
+   `integrations/`. Las pruebas de integración usan PostgreSQL con pgvector real.
+8. **Formato de error.** Se conserva el de FastAPI (`{"detail": ...}`); los errores no controlados
+   responden 500 con un mensaje genérico.
+9. **Documentos de referencia.** `docs/das.pdf` y `docs/hu.pdf` no se versionan en este repositorio.
+10. **Límites provisionales (P-23, Q-13).** Con valor por defecto ajustable por entorno: 600
+    páginas por pliego, 20 análisis y 200 preguntas al chat por organización en 24 horas, 2000
+    caracteres por pregunta, 30 peticiones por minuto a NVIDIA con 5 reintentos, y 3 entregas y
+    3600 s por trabajo de análisis. La cuota es una ventana móvil de 24 horas, no un día de
+    calendario. Son cifras de partida, no decisiones del equipo: hay que confirmarlas.
+
+### Criterios confirmados para la demo
+
+- HU-B20 envía un ítem automático a revisión por requisito ambiguo, cita no verificada o
+  confianza menor que `REVISION_UMBRAL_CONFIANZA` (0,70 para la demo). Conserva el estado
+  propuesto y registra los motivos. Las revisiones humanas existentes se respetan.
+- HU-B19 calcula la recomendación en código. `ANTHROPIC_MODEL_REDACCION` explica la decisión
+  con referencias a los numerales entregados. El cierre requiere una recomendación y una
+  justificación consolidada para el trabajo.
+- HU-B21 expone `GET /api/licitaciones/{id}/resultado` y `GET /api/licitaciones/{id}/pdf-url`.
+  El resultado activo devuelve 202 con progreso. Un análisis anterior que cerró sin decisión
+  devuelve 409. La matriz no introduce códigos de proceso ni entidades que el backend aún no
+  persiste. El contrato actualizado está en [OpenAPI](openapi.json).
+
+## 6. Ambigüedades detectadas
+
+- **Creación de organizaciones.** El DAS solo describe cómo un administrador invita revisores. Se
+  mantiene el comando `analizador-cli crear-organizacion`.
+- **Campos comparables por código (P-03).** El DAS no enumera los indicadores. El contrato de
+  extracción define un conjunto cerrado: los siete indicadores financieros del RUP, el valor y el
+  número de contratos de experiencia y el código UNSPSC. Lo demás se verifica como cualitativo.
+- **Subsanabilidad (Q-01, RF-20).** Sin criterios: las brechas no se clasifican como subsanables.
+- **Pliego de demostración (Q-11).** No está elegido. HU-B11 y HU-B15 se prueban con un PDF
+  sintético; la medición sobre un pliego real de SECOP queda pendiente.
+- **Reranker (P-11).** No aprobado: queda implementado pero apagado por configuración.
+
+## 7. Deuda técnica
+
+Se completa al cerrar cada historia.
+
+- **Sin pruebas contra servicios reales.** Supabase Storage, NVIDIA y Anthropic se prueban con
+  dobles: las claves locales están vacías. Falta una pasada manual con credenciales reales.
+- **Pliego real (HU-B11, HU-B15).** La división en secciones se probó con un pliego sintético.
+  Falta medir los numerales detectados contra la tabla de contenido del pliego de la demo (Q-11).
+- **Encabezados que empiezan con sigla** (`3.2 RUP del proponente`) no abren sección: tienen la
+  misma forma que una cifra (`1.5 SMMLV por cada día`). El texto queda en la sección anterior.
+- **Tablas sin bordes (HU-B10).** pdfplumber solo detecta tablas dibujadas con líneas.
+- **Tamaño de la imagen Docker.** PyMuPDF 2.1 arrastra `onnxruntime` y `numpy`.
+- **Índice vectorial.** Sin dimensión fija ni índice hasta decidir el modelo (P-10).
+- **Año de los indicadores financieros (HU-B17).** Se usa el último año cargado; un pliego que
+  pida otro año de corte no se distingue.
+- **Experiencia sin código UNSPSC (HU-B17).** Si el requisito no exige un código, no hay forma
+  determinista de saber qué contratos son pertinentes: el ítem pasa a revisión cuando alcanza
+  lo exigido, lo que deja la recomendación condicionada hasta que alguien lo confirme.
+- **Chat (HU-B24).** No guarda el historial de la conversación (lo conserva el frontend,
+  HU-F12). Las licitaciones analizadas antes de esta versión no tienen el pliego indexado: el
+  chat responde 409 hasta reanalizarlas.
+- **Correos con cuenta (HU-B02).** Supabase no reinvita un correo que ya tiene cuenta (por
+  ejemplo, de otra organización): la API responde 409. Agregar usuarios existentes queda pendiente.
+- **Fecha de cierre (HU-B22).** El listado no la incluye: el backend aún no persiste el
+  cronograma del pliego.
+- **Observaciones (HU-B25).** El borrador no se guarda: cada solicitud vuelve a llamar a Claude
+  y cuenta para `CUOTA_OBSERVACIONES_DIARIA`.
+- **Exportación (HU-B29).** Los textos que empiezan con `=`, `+`, `-` o `@` se ven en Excel con
+  un apóstrofo delante: es el costo de neutralizar fórmulas (S-12).

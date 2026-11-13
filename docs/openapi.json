@@ -1,0 +1,3204 @@
+{
+  "components": {
+    "schemas": {
+      "Body_cargar_api_conocimiento_post": {
+        "properties": {
+          "archivo": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Base de conocimiento en JSON",
+            "title": "Archivo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "archivo"
+        ],
+        "title": "Body_cargar_api_conocimiento_post",
+        "type": "object"
+      },
+      "Body_cargar_pliego_api_licitaciones_post": {
+        "properties": {
+          "archivo": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Pliego en PDF",
+            "title": "Archivo",
+            "type": "string"
+          },
+          "titulo": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titulo"
+          }
+        },
+        "required": [
+          "archivo"
+        ],
+        "title": "Body_cargar_pliego_api_licitaciones_post",
+        "type": "object"
+      },
+      "CambioRolIn": {
+        "properties": {
+          "rol": {
+            "$ref": "#/components/schemas/Rol"
+          }
+        },
+        "required": [
+          "rol"
+        ],
+        "title": "CambioRolIn",
+        "type": "object"
+      },
+      "CitaChatOut": {
+        "properties": {
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "pagina": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagina"
+          }
+        },
+        "required": [
+          "numeral",
+          "pagina"
+        ],
+        "title": "CitaChatOut",
+        "type": "object"
+      },
+      "CoberturaMatrizOut": {
+        "properties": {
+          "numerales_no_procesados": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Numerales No Procesados",
+            "type": "array"
+          },
+          "secciones_procesadas": {
+            "title": "Secciones Procesadas",
+            "type": "integer"
+          },
+          "secciones_total": {
+            "title": "Secciones Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "secciones_procesadas",
+          "secciones_total",
+          "numerales_no_procesados"
+        ],
+        "title": "CoberturaMatrizOut",
+        "type": "object"
+      },
+      "ConocimientoCargado": {
+        "properties": {
+          "resumen": {
+            "$ref": "#/components/schemas/ResumenConocimiento"
+          },
+          "trabajo": {
+            "$ref": "#/components/schemas/TrabajoOut"
+          }
+        },
+        "required": [
+          "resumen",
+          "trabajo"
+        ],
+        "title": "ConocimientoCargado",
+        "type": "object"
+      },
+      "ErrorResultadoOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorResultadoOut",
+        "type": "object"
+      },
+      "EstadoCumplimiento": {
+        "description": "Estados del reto (RF-04). Pendiente Q-17 / P-25.",
+        "enum": [
+          "cumple",
+          "cumple_parcialmente",
+          "no_cumple"
+        ],
+        "title": "EstadoCumplimiento",
+        "type": "string"
+      },
+      "EstadoLicitacion": {
+        "enum": [
+          "pendiente",
+          "procesando",
+          "completada",
+          "fallida"
+        ],
+        "title": "EstadoLicitacion",
+        "type": "string"
+      },
+      "EstadoMatriz": {
+        "enum": [
+          "cumple",
+          "cumple_parcialmente",
+          "no_cumple",
+          "revision"
+        ],
+        "title": "EstadoMatriz",
+        "type": "string"
+      },
+      "EstadoTrabajo": {
+        "enum": [
+          "en_cola",
+          "en_ejecucion",
+          "completado",
+          "fallido"
+        ],
+        "title": "EstadoTrabajo",
+        "type": "string"
+      },
+      "EtapaOut": {
+        "properties": {
+          "clave": {
+            "title": "Clave",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "porcentaje": {
+            "title": "Porcentaje",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clave",
+          "nombre",
+          "porcentaje"
+        ],
+        "title": "EtapaOut",
+        "type": "object"
+      },
+      "EvidenciaMatrizOut": {
+        "properties": {
+          "cita_literal": {
+            "title": "Cita Literal",
+            "type": "string"
+          },
+          "cita_verificada": {
+            "title": "Cita Verificada",
+            "type": "boolean"
+          },
+          "fuente_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuente Id"
+          },
+          "fuente_nombre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuente Nombre"
+          },
+          "similitud": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similitud"
+          }
+        },
+        "required": [
+          "fuente_id",
+          "fuente_nombre",
+          "cita_literal",
+          "cita_verificada",
+          "similitud"
+        ],
+        "title": "EvidenciaMatrizOut",
+        "type": "object"
+      },
+      "FuenteConocimientoOut": {
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoFuenteConocimiento"
+          },
+          "titulo": {
+            "title": "Titulo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "titulo",
+          "creado_en"
+        ],
+        "title": "FuenteConocimientoOut",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InvitacionIn": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "rol": {
+            "$ref": "#/components/schemas/Rol",
+            "default": "revisor"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "InvitacionIn",
+        "type": "object"
+      },
+      "ItemMatrizOut": {
+        "properties": {
+          "categoria": {
+            "$ref": "#/components/schemas/TipoRequisito"
+          },
+          "codigo_req": {
+            "title": "Codigo Req",
+            "type": "string"
+          },
+          "confianza": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confianza"
+          },
+          "descripcion_item": {
+            "title": "Descripcion Item",
+            "type": "string"
+          },
+          "es_ambiguo": {
+            "title": "Es Ambiguo",
+            "type": "boolean"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoMatriz"
+          },
+          "estado_propuesto": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EstadoCumplimiento"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidencia": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenciaMatrizOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidencias": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenciaMatrizOut"
+            },
+            "title": "Evidencias",
+            "type": "array"
+          },
+          "faltante": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Faltante"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "motivo_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo Revision"
+          },
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          },
+          "resultado_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado Id"
+          },
+          "revisiones": {
+            "items": {
+              "$ref": "#/components/schemas/RevisionOut"
+            },
+            "title": "Revisiones",
+            "type": "array"
+          },
+          "texto_requisito_literal": {
+            "title": "Texto Requisito Literal",
+            "type": "string"
+          },
+          "texto_requisito_verificado": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Texto Requisito Verificado"
+          },
+          "ubicacion": {
+            "$ref": "#/components/schemas/UbicacionMatrizOut"
+          }
+        },
+        "required": [
+          "id",
+          "requisito_id",
+          "resultado_id",
+          "codigo_req",
+          "numeral",
+          "categoria",
+          "texto_requisito_literal",
+          "texto_requisito_verificado",
+          "descripcion_item",
+          "estado",
+          "estado_propuesto",
+          "motivo_revision",
+          "es_ambiguo",
+          "evidencia",
+          "evidencias",
+          "faltante",
+          "confianza",
+          "ubicacion",
+          "revisiones"
+        ],
+        "title": "ItemMatrizOut",
+        "type": "object"
+      },
+      "ItemOut": {
+        "properties": {
+          "descripcion": {
+            "title": "Descripcion",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "orden": {
+            "title": "Orden",
+            "type": "integer"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResultadoOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "orden",
+          "descripcion",
+          "resultado"
+        ],
+        "title": "ItemOut",
+        "type": "object"
+      },
+      "LicitacionCreada": {
+        "properties": {
+          "duplicada": {
+            "default": false,
+            "title": "Duplicada",
+            "type": "boolean"
+          },
+          "licitacion": {
+            "$ref": "#/components/schemas/LicitacionResumen"
+          },
+          "trabajo": {
+            "$ref": "#/components/schemas/TrabajoOut"
+          }
+        },
+        "required": [
+          "licitacion",
+          "trabajo"
+        ],
+        "title": "LicitacionCreada",
+        "type": "object"
+      },
+      "LicitacionDetalle": {
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoLicitacion"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "justificacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justificacion"
+          },
+          "nombre_archivo": {
+            "title": "Nombre Archivo",
+            "type": "string"
+          },
+          "recomendacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recomendacion"
+          },
+          "requisitos": {
+            "items": {
+              "$ref": "#/components/schemas/RequisitoOut"
+            },
+            "title": "Requisitos",
+            "type": "array"
+          },
+          "titulo": {
+            "title": "Titulo",
+            "type": "string"
+          },
+          "url_pdf": {
+            "title": "Url Pdf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "nombre_archivo",
+          "estado",
+          "recomendacion",
+          "creado_en",
+          "justificacion",
+          "url_pdf",
+          "requisitos"
+        ],
+        "title": "LicitacionDetalle",
+        "type": "object"
+      },
+      "LicitacionResumen": {
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoLicitacion"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nombre_archivo": {
+            "title": "Nombre Archivo",
+            "type": "string"
+          },
+          "recomendacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recomendacion"
+          },
+          "titulo": {
+            "title": "Titulo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "nombre_archivo",
+          "estado",
+          "recomendacion",
+          "creado_en"
+        ],
+        "title": "LicitacionResumen",
+        "type": "object"
+      },
+      "LimitesOut": {
+        "properties": {
+          "analisis": {
+            "$ref": "#/components/schemas/UsoOut"
+          },
+          "chat": {
+            "$ref": "#/components/schemas/UsoOut"
+          },
+          "chat_max_caracteres": {
+            "title": "Chat Max Caracteres",
+            "type": "integer"
+          },
+          "max_pdf_mb": {
+            "title": "Max Pdf Mb",
+            "type": "integer"
+          },
+          "max_pdf_paginas": {
+            "title": "Max Pdf Paginas",
+            "type": "integer"
+          },
+          "ventana_horas": {
+            "title": "Ventana Horas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_pdf_mb",
+          "max_pdf_paginas",
+          "chat_max_caracteres",
+          "ventana_horas",
+          "analisis",
+          "chat"
+        ],
+        "title": "LimitesOut",
+        "type": "object"
+      },
+      "MiembroOut": {
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invitacion_pendiente": {
+            "title": "Invitacion Pendiente",
+            "type": "boolean"
+          },
+          "organizacion_id": {
+            "format": "uuid",
+            "title": "Organizacion Id",
+            "type": "string"
+          },
+          "rol": {
+            "$ref": "#/components/schemas/Rol"
+          },
+          "usuario_id": {
+            "format": "uuid",
+            "title": "Usuario Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organizacion_id",
+          "usuario_id",
+          "email",
+          "rol",
+          "invitacion_pendiente",
+          "creado_en"
+        ],
+        "title": "MiembroOut",
+        "type": "object"
+      },
+      "ObservacionIn": {
+        "properties": {
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requisito_id"
+        ],
+        "title": "ObservacionIn",
+        "type": "object"
+      },
+      "ObservacionOut": {
+        "description": "Borrador de observación para la entidad (HU-B25). El sistema no lo envía.",
+        "properties": {
+          "asunto": {
+            "title": "Asunto",
+            "type": "string"
+          },
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          },
+          "texto": {
+            "title": "Texto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requisito_id",
+          "numeral",
+          "asunto",
+          "texto"
+        ],
+        "title": "ObservacionOut",
+        "type": "object"
+      },
+      "PrecisionUbicacion": {
+        "description": "Precisión de la ubicación del requisito en el PDF (RF-26, P-21).",
+        "enum": [
+          "exacta",
+          "aproximada",
+          "solo_pagina"
+        ],
+        "title": "PrecisionUbicacion",
+        "type": "string"
+      },
+      "PreguntaIn": {
+        "properties": {
+          "pregunta": {
+            "minLength": 1,
+            "title": "Pregunta",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pregunta"
+        ],
+        "title": "PreguntaIn",
+        "type": "object"
+      },
+      "ProgresoOut": {
+        "description": "Avance del análisis de una licitación, leído de PostgreSQL (HU-B08, ADR-015).",
+        "properties": {
+          "actualizado_en": {
+            "format": "date-time",
+            "title": "Actualizado En",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoTrabajo"
+          },
+          "estado_licitacion": {
+            "$ref": "#/components/schemas/EstadoLicitacion"
+          },
+          "etapa_actual": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etapa Actual"
+          },
+          "etapas": {
+            "items": {
+              "$ref": "#/components/schemas/EtapaOut"
+            },
+            "title": "Etapas",
+            "type": "array"
+          },
+          "finalizado_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finalizado En"
+          },
+          "iniciado_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iniciado En"
+          },
+          "intentos": {
+            "title": "Intentos",
+            "type": "integer"
+          },
+          "licitacion_id": {
+            "format": "uuid",
+            "title": "Licitacion Id",
+            "type": "string"
+          },
+          "progreso": {
+            "title": "Progreso",
+            "type": "integer"
+          },
+          "secciones": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeccionesProgreso"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trabajo_id": {
+            "format": "uuid",
+            "title": "Trabajo Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "licitacion_id",
+          "estado_licitacion",
+          "trabajo_id",
+          "estado",
+          "etapa_actual",
+          "progreso",
+          "secciones",
+          "error",
+          "intentos",
+          "iniciado_en",
+          "finalizado_en",
+          "actualizado_en",
+          "etapas"
+        ],
+        "title": "ProgresoOut",
+        "type": "object"
+      },
+      "Recomendacion": {
+        "enum": [
+          "presentarse",
+          "presentarse_con_riesgo",
+          "no_presentarse",
+          "condicionada"
+        ],
+        "title": "Recomendacion",
+        "type": "string"
+      },
+      "RequisitoOut": {
+        "properties": {
+          "ambiguo": {
+            "title": "Ambiguo",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "motivo_ambiguedad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo Ambiguedad"
+          },
+          "numeral": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numeral"
+          },
+          "texto_literal": {
+            "title": "Texto Literal",
+            "type": "string"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoRequisito"
+          },
+          "ubicacion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UbicacionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "numeral",
+          "tipo",
+          "texto_literal",
+          "ambiguo",
+          "motivo_ambiguedad",
+          "ubicacion",
+          "items"
+        ],
+        "title": "RequisitoOut",
+        "type": "object"
+      },
+      "RespuestaChatOut": {
+        "description": "Respuesta del chat de una licitación (HU-B24). Texto plano: nunca se renderiza como HTML.",
+        "properties": {
+          "citas": {
+            "items": {
+              "$ref": "#/components/schemas/CitaChatOut"
+            },
+            "title": "Citas",
+            "type": "array"
+          },
+          "encontrado": {
+            "title": "Encontrado",
+            "type": "boolean"
+          },
+          "respuesta": {
+            "title": "Respuesta",
+            "type": "string"
+          }
+        },
+        "required": [
+          "respuesta",
+          "encontrado",
+          "citas"
+        ],
+        "title": "RespuestaChatOut",
+        "type": "object"
+      },
+      "ResultadoMatrizOut": {
+        "properties": {
+          "brechas": {
+            "items": {
+              "$ref": "#/components/schemas/ItemMatrizOut"
+            },
+            "title": "Brechas",
+            "type": "array"
+          },
+          "categorias": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "propertyNames": {
+                "$ref": "#/components/schemas/EstadoMatriz"
+              },
+              "type": "object"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/TipoRequisito"
+            },
+            "title": "Categorias",
+            "type": "object"
+          },
+          "cobertura": {
+            "$ref": "#/components/schemas/CoberturaMatrizOut"
+          },
+          "fecha_carga": {
+            "format": "date-time",
+            "title": "Fecha Carga",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemMatrizOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "justificacion": {
+            "title": "Justificacion",
+            "type": "string"
+          },
+          "licitacion_id": {
+            "format": "uuid",
+            "title": "Licitacion Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "pdf_nombre": {
+            "title": "Pdf Nombre",
+            "type": "string"
+          },
+          "pdf_paginas": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Paginas"
+          },
+          "pdf_url_temporal": {
+            "title": "Pdf Url Temporal",
+            "type": "string"
+          },
+          "recomendacion": {
+            "$ref": "#/components/schemas/Recomendacion"
+          },
+          "resumen_estados": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/EstadoMatriz"
+            },
+            "title": "Resumen Estados",
+            "type": "object"
+          }
+        },
+        "required": [
+          "licitacion_id",
+          "nombre",
+          "fecha_carga",
+          "pdf_nombre",
+          "pdf_paginas",
+          "pdf_url_temporal",
+          "recomendacion",
+          "justificacion",
+          "cobertura",
+          "resumen_estados",
+          "categorias",
+          "items",
+          "brechas"
+        ],
+        "title": "ResultadoMatrizOut",
+        "type": "object"
+      },
+      "ResultadoOut": {
+        "properties": {
+          "confianza": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confianza"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoCumplimiento"
+          },
+          "evidencia": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Evidencia",
+            "type": "array"
+          },
+          "faltante": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Faltante"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "requiere_revision": {
+            "title": "Requiere Revision",
+            "type": "boolean"
+          },
+          "revisiones": {
+            "items": {
+              "$ref": "#/components/schemas/RevisionOut"
+            },
+            "title": "Revisiones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "evidencia",
+          "faltante",
+          "confianza",
+          "requiere_revision",
+          "revisiones"
+        ],
+        "title": "ResultadoOut",
+        "type": "object"
+      },
+      "ResumenConocimiento": {
+        "description": "Qué hay cargado en la base de conocimiento de la organización (HU-B05, HU-F04).",
+        "properties": {
+          "anios_financieros": {
+            "title": "Anios Financieros",
+            "type": "integer"
+          },
+          "capacidades": {
+            "title": "Capacidades",
+            "type": "integer"
+          },
+          "cargada": {
+            "title": "Cargada",
+            "type": "boolean"
+          },
+          "cargada_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargada En"
+          },
+          "certificaciones": {
+            "title": "Certificaciones",
+            "type": "integer"
+          },
+          "contratos": {
+            "title": "Contratos",
+            "type": "integer"
+          },
+          "empresa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empresa"
+          },
+          "fragmentos_indexados": {
+            "title": "Fragmentos Indexados",
+            "type": "integer"
+          },
+          "indexacion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrabajoOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personas": {
+            "title": "Personas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cargada",
+          "empresa",
+          "cargada_en",
+          "anios_financieros",
+          "contratos",
+          "personas",
+          "certificaciones",
+          "capacidades",
+          "fragmentos_indexados",
+          "indexacion"
+        ],
+        "title": "ResumenConocimiento",
+        "type": "object"
+      },
+      "RevisionCreada": {
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/RevisionOut"
+          },
+          "trabajo": {
+            "$ref": "#/components/schemas/TrabajoOut"
+          }
+        },
+        "required": [
+          "revision",
+          "trabajo"
+        ],
+        "title": "RevisionCreada",
+        "type": "object"
+      },
+      "RevisionIn": {
+        "properties": {
+          "comentario": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Comentario",
+            "type": "string"
+          },
+          "estado_nuevo": {
+            "$ref": "#/components/schemas/EstadoCumplimiento"
+          }
+        },
+        "required": [
+          "estado_nuevo",
+          "comentario"
+        ],
+        "title": "RevisionIn",
+        "type": "object"
+      },
+      "RevisionOut": {
+        "properties": {
+          "autor_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Autor Email"
+          },
+          "comentario": {
+            "title": "Comentario",
+            "type": "string"
+          },
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "estado_anterior": {
+            "$ref": "#/components/schemas/EstadoCumplimiento"
+          },
+          "estado_nuevo": {
+            "$ref": "#/components/schemas/EstadoCumplimiento"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "usuario_id": {
+            "format": "uuid",
+            "title": "Usuario Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "usuario_id",
+          "estado_anterior",
+          "estado_nuevo",
+          "comentario",
+          "creado_en"
+        ],
+        "title": "RevisionOut",
+        "type": "object"
+      },
+      "Rol": {
+        "description": "Rol de un miembro dentro de su organización (RF-09, ADR-014).",
+        "enum": [
+          "administrador",
+          "revisor"
+        ],
+        "title": "Rol",
+        "type": "string"
+      },
+      "SeccionesProgreso": {
+        "properties": {
+          "procesadas": {
+            "title": "Procesadas",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "procesadas",
+          "total"
+        ],
+        "title": "SeccionesProgreso",
+        "type": "object"
+      },
+      "TipoFuenteConocimiento": {
+        "description": "Tipos de fuente de la base de conocimiento (sección 6.3).\n\n`empresa` no está en el DAS: guarda los datos generales del oferente (razón social, NIT).",
+        "enum": [
+          "empresa",
+          "contrato",
+          "hoja_de_vida",
+          "financiero",
+          "certificacion",
+          "capacidad"
+        ],
+        "title": "TipoFuenteConocimiento",
+        "type": "string"
+      },
+      "TipoRequisito": {
+        "description": "Taxonomía del reto (RF-01). Pendiente Q-16 / P-24.",
+        "enum": [
+          "habilitante",
+          "tecnico",
+          "experiencia",
+          "plazo"
+        ],
+        "title": "TipoRequisito",
+        "type": "string"
+      },
+      "TipoTrabajo": {
+        "description": "Tipos de trabajo asíncrono; cada uno tiene su cola (P-15).",
+        "enum": [
+          "analisis",
+          "indexacion",
+          "reevaluacion"
+        ],
+        "title": "TipoTrabajo",
+        "type": "string"
+      },
+      "TrabajoOut": {
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "detalle": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detalle"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoTrabajo"
+          },
+          "etapa_actual": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etapa Actual"
+          },
+          "finalizado_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finalizado En"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "iniciado_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iniciado En"
+          },
+          "progreso": {
+            "title": "Progreso",
+            "type": "integer"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoTrabajo"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "estado",
+          "etapa_actual",
+          "progreso",
+          "error",
+          "detalle",
+          "creado_en",
+          "iniciado_en",
+          "finalizado_en"
+        ],
+        "title": "TrabajoOut",
+        "type": "object"
+      },
+      "UbicacionMatrizOut": {
+        "properties": {
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "precision": {
+            "$ref": "#/components/schemas/PrecisionUbicacion"
+          },
+          "zonas": {
+            "items": {
+              "$ref": "#/components/schemas/ZonaMatrizOut"
+            },
+            "title": "Zonas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pagina",
+          "precision",
+          "zonas"
+        ],
+        "title": "UbicacionMatrizOut",
+        "type": "object"
+      },
+      "UbicacionOut": {
+        "properties": {
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "precision": {
+            "$ref": "#/components/schemas/PrecisionUbicacion"
+          },
+          "zonas": {
+            "items": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            "title": "Zonas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pagina",
+          "zonas",
+          "precision"
+        ],
+        "title": "UbicacionOut",
+        "type": "object"
+      },
+      "UrlPdfOut": {
+        "properties": {
+          "pdf_url_temporal": {
+            "title": "Pdf Url Temporal",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pdf_url_temporal"
+        ],
+        "title": "UrlPdfOut",
+        "type": "object"
+      },
+      "UsoOut": {
+        "properties": {
+          "cuota": {
+            "title": "Cuota",
+            "type": "integer"
+          },
+          "usados": {
+            "title": "Usados",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usados",
+          "cuota"
+        ],
+        "title": "UsoOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "YoOut": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "membresias": {
+            "items": {
+              "$ref": "#/components/schemas/MiembroOut"
+            },
+            "title": "Membresias",
+            "type": "array"
+          },
+          "usuario_id": {
+            "format": "uuid",
+            "title": "Usuario Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "usuario_id",
+          "email",
+          "membresias"
+        ],
+        "title": "YoOut",
+        "type": "object"
+      },
+      "ZonaMatrizOut": {
+        "properties": {
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "pagina",
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "ZonaMatrizOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "Analizador de pliegos",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/conocimiento": {
+      "get": {
+        "description": "Qué hay cargado y en qué estado está su indexación (HU-F04).",
+        "operationId": "resumen_api_conocimiento_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenConocimiento"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resumen",
+        "tags": [
+          "base de conocimiento"
+        ]
+      },
+      "post": {
+        "description": "Valida el archivo completo, reemplaza la base anterior y encola la indexación.\n\nEl reemplazo es atómico: o queda guardada la versión nueva completa, o se conserva la\nanterior. Si el archivo no cumple el contrato se rechaza entero.",
+        "operationId": "cargar_api_conocimiento_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_cargar_api_conocimiento_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConocimientoCargado"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cargar",
+        "tags": [
+          "base de conocimiento"
+        ]
+      }
+    },
+    "/api/conocimiento/fuentes": {
+      "get": {
+        "operationId": "listar_api_conocimiento_fuentes_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FuenteConocimientoOut"
+                  },
+                  "title": "Response Listar Api Conocimiento Fuentes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "base de conocimiento"
+        ]
+      }
+    },
+    "/api/conocimiento/indexacion": {
+      "post": {
+        "description": "Vuelve a indexar la base ya cargada, por ejemplo tras un fallo de la indexación.",
+        "operationId": "reindexar_api_conocimiento_indexacion_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrabajoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reindexar",
+        "tags": [
+          "base de conocimiento"
+        ]
+      }
+    },
+    "/api/licitaciones": {
+      "get": {
+        "description": "Panel de licitaciones de la organización con estado y recomendación (RF-11, HU-B22).",
+        "operationId": "listar_api_licitaciones_get",
+        "parameters": [
+          {
+            "description": "Orden por fecha de carga: primero las más recientes o las más antiguas",
+            "in": "query",
+            "name": "orden",
+            "required": false,
+            "schema": {
+              "default": "recientes",
+              "description": "Orden por fecha de carga: primero las más recientes o las más antiguas",
+              "enum": [
+                "recientes",
+                "antiguas"
+              ],
+              "title": "Orden",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LicitacionResumen"
+                  },
+                  "title": "Response Listar Api Licitaciones Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "licitaciones"
+        ]
+      },
+      "post": {
+        "description": "Guarda el pliego, crea la licitación y su trabajo y encola el análisis (HU-B07).\n\nSi falla el almacén, la base de datos o la cola, se deshace lo ya hecho: no queda una\nlicitación sin trabajo ni un trabajo sin mensaje.",
+        "operationId": "cargar_pliego_api_licitaciones_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_cargar_pliego_api_licitaciones_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicitacionCreada"
+                }
+              }
+            },
+            "description": "El mismo PDF ya fue analizado en la organización: se devuelve ese análisis (`duplicada: true`) sin iniciar uno nuevo."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicitacionCreada"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cargar Pliego",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}": {
+      "get": {
+        "description": "Matriz de cobertura desde la base de datos, sin modelos (F-04), y URL del PDF (F-09).",
+        "operationId": "detalle_api_licitaciones__licitacion_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicitacionDetalle"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Detalle",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/chat": {
+      "post": {
+        "description": "Responde una pregunta sobre el pliego y su resultado, citando numerales (HU-B24).",
+        "operationId": "chat_api_licitaciones__licitacion_id__chat_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreguntaIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Chat",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/exportar": {
+      "get": {
+        "description": "Descarga la matriz en Excel: una fila por ítem y una hoja de resumen (HU-B29).",
+        "operationId": "exportar_matriz_api_licitaciones__licitacion_id__exportar_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "Matriz en Excel"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Exportar Matriz",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/observaciones": {
+      "post": {
+        "description": "Borrador de observación para un requisito ambiguo; no se envía a la entidad (HU-B25).",
+        "operationId": "observaciones_api_licitaciones__licitacion_id__observaciones_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservacionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservacionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Observaciones",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/pdf-url": {
+      "get": {
+        "description": "Renueva el acceso temporal al pliego del visor (HU-B21, RF-26).",
+        "operationId": "renovar_url_pdf_api_licitaciones__licitacion_id__pdf_url_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlPdfOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Renovar Url Pdf",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/progreso": {
+      "get": {
+        "description": "Etapa, porcentaje y secciones procesadas del análisis más reciente (HU-B08).\n\nTodo sale de PostgreSQL (ADR-015): este endpoint no consulta la cola.",
+        "operationId": "progreso_api_licitaciones__licitacion_id__progreso_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgresoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Progreso",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/reintentar": {
+      "post": {
+        "description": "Reencola el último análisis o recálculo fallido (HU-B09, HU-B23).\n\nCon el checkpointer (P-08) un análisis se reanuda donde quedó; un recálculo tras una\nrevisión humana solo repite brechas, recomendación y justificación.",
+        "operationId": "reintentar_api_licitaciones__licitacion_id__reintentar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrabajoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reintentar",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/resultado": {
+      "get": {
+        "description": "Entrega el resultado consolidado, o el avance cuando el trabajo sigue activo (HU-B21).",
+        "operationId": "resultado_matriz_api_licitaciones__licitacion_id__resultado_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoMatrizOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgresoOut"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProgresoOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorResultadoOut"
+                    }
+                  ],
+                  "title": "Response 409 Resultado Matriz Api Licitaciones  Licitacion Id  Resultado Get"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resultado Matriz",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/trabajos": {
+      "get": {
+        "description": "Progreso del procesamiento (ADR-015): el frontend consulta aquí, no a RabbitMQ.",
+        "operationId": "trabajos_api_licitaciones__licitacion_id__trabajos_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TrabajoOut"
+                  },
+                  "title": "Response Trabajos Api Licitaciones  Licitacion Id  Trabajos Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Trabajos",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/limites": {
+      "get": {
+        "operationId": "limites_api_limites_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Limites",
+        "tags": [
+          "límites"
+        ]
+      }
+    },
+    "/api/miembros": {
+      "get": {
+        "description": "Miembros de la organización con su rol y si la invitación sigue pendiente (HU-B03).",
+        "operationId": "listar_api_miembros_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MiembroOut"
+                  },
+                  "title": "Response Listar Api Miembros Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "miembros"
+        ]
+      }
+    },
+    "/api/miembros/invitaciones": {
+      "post": {
+        "description": "Invita un correo con un rol a la organización del administrador (HU-B02).",
+        "operationId": "invitar_api_miembros_invitaciones_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitacionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MiembroOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Invitar",
+        "tags": [
+          "miembros"
+        ]
+      }
+    },
+    "/api/miembros/{miembro_id}": {
+      "delete": {
+        "description": "Retira a un miembro: pierde el acceso en su siguiente petición (HU-B03).",
+        "operationId": "eliminar_api_miembros__miembro_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "miembro_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Miembro Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Eliminar",
+        "tags": [
+          "miembros"
+        ]
+      }
+    },
+    "/api/miembros/{miembro_id}/rol": {
+      "patch": {
+        "description": "Cambia el rol de un miembro de la organización (HU-B03).",
+        "operationId": "cambiar_rol_api_miembros__miembro_id__rol_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "miembro_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Miembro Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioRolIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MiembroOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cambiar Rol",
+        "tags": [
+          "miembros"
+        ]
+      }
+    },
+    "/api/resultados/{resultado_id}/revisiones": {
+      "post": {
+        "operationId": "revisar_api_resultados__resultado_id__revisiones_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "resultado_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Resultado Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionCreada"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revisar",
+        "tags": [
+          "revisión"
+        ]
+      }
+    },
+    "/api/yo": {
+      "get": {
+        "operationId": "yo_api_yo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Yo",
+        "tags": [
+          "identidad"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "vivo_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Vivo Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Vivo",
+        "tags": [
+          "salud"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "listo_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Listo Health Ready Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listo",
+        "tags": [
+          "salud"
+        ]
+      }
+    }
+  }
+}

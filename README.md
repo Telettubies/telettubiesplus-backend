@@ -40,11 +40,11 @@ Preparación de la instancia (una vez):
 
 1. **Security group**: entrada 80, 443 y 22. El CD entra por SSH desde runners de GitHub (IPs variables),
    así que 22 debe quedar abierto con acceso solo por llave. No abrir 5432, 5672 ni 15672.
-2. **Rol IAM** de la instancia con `s3:GetObject` / `s3:PutObject` sobre el bucket (sin claves en `.env`).
-3. **IMDSv2 desde contenedores**: subir el *hop limit* a 2, o boto3 no obtiene las credenciales del rol:
-   `aws ec2 modify-instance-metadata-options --instance-id <id> --http-put-response-hop-limit 2 --http-tokens required`
-4. **IP elástica** y registro DNS A del dominio de la API hacia ella.
-5. Instalar Docker y el plugin de Compose (Amazon Linux 2023: `sudo dnf install -y docker`, plugin
+2. **Supabase Storage**: crear un bucket **privado** y poner su nombre en `SUPABASE_STORAGE_BUCKET`.
+   El backend lo usa con `SUPABASE_SERVICE_ROLE_KEY`; los PDF solo salen por URL firmadas de pocos
+   minutos (`STORAGE_URL_TTL_SECONDS`). No hacen falta credenciales de AWS ni rol IAM.
+3. **IP elástica** y registro DNS A del dominio de la API hacia ella.
+4. Instalar Docker y el plugin de Compose (Amazon Linux 2023: `sudo dnf install -y docker`, plugin
    `docker-compose-plugin` o el binario oficial; `sudo systemctl enable --now docker`).
 
 Primer despliegue en la instancia: crear la carpeta y su `.env` (el resto lo copia el CD):
@@ -86,8 +86,20 @@ La consola de RabbitMQ queda en `127.0.0.1:15672` de la instancia: `ssh -L 15672
 ```bash
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
-uv run pytest
+uv run pytest                        # unitarias + integración
+uv run pytest -m "not integracion"   # solo unitarias, sin base de datos
 ```
+
+Las pruebas de integración (`tests/integracion/`) usan PostgreSQL con pgvector real y simulan
+Supabase, Anthropic y NVIDIA: no gastan créditos. En local toman las credenciales de
+`POSTGRES_USER` / `POSTGRES_PASSWORD` del `.env` y crean la base `analizador_test` en el
+PostgreSQL del Compose de desarrollo; si no está arriba, se omiten. En el CI la base llega por
+`TEST_DATABASE_URL` y, si falta, fallan.
+
+El contrato de la API para el frontend está en [docs/openapi.json](docs/openapi.json); se
+regenera con `uv run analizador-cli exportar-openapi` y una prueba falla si queda desactualizado.
+El plan de implementación y su seguimiento están en [docs/PLAN.md](docs/PLAN.md).
+La configuración de agentes (Codex y Claude Code) y sus skills están en [Agent Skills](agent_skills.md).
 
 ## Estructura
 
@@ -98,7 +110,7 @@ src/analizador/
 ├── db/                  # motor/sesiones SQLAlchemy y migraciones Alembic
 ├── models/              # ORM (sección 6.3 del DAS)
 ├── schemas.py           # entrada/salida de la API
-├── integrations/        # S3, Supabase Auth, Anthropic, NVIDIA
+├── integrations/        # Supabase (Auth y Storage), Anthropic, NVIDIA
 ├── messaging/           # topología de RabbitMQ y publicador
 ├── pipeline/            # grafo LangGraph y etapas 1–11 (stubs)
 ├── worker/              # consumidor de colas (C-03)
@@ -117,14 +129,189 @@ src/analizador/
 | Taxonomía y estados | Los del reto (RF-01, RF-04) hasta resolver Q-16 / Q-17 |
 | Autenticación | JWT de Supabase verificado con JWKS (claves asimétricas) |
 | Autorización | Organización y rol desde `miembros` (ADR-014); `X-Organizacion-Id` si el usuario tiene varias |
+| Almacenamiento | Supabase Storage (bucket privado, API REST) en lugar de AWS S3; ver `docs/PLAN.md` |
 | Fuera por ahora | Seguridad por fila (P-22), cuotas (P-23), contratos de IA (P-18), CI/CD |
 
 ## Pendiente (stubs y TODO)
 
-- Etapas del pipeline (`pipeline/etapas.py`): todas registran progreso pero no procesan nada.
-- Carga e indexación de la base de conocimiento: bloqueadas por Q-05.
-- Chat (RF-13) y observaciones (RF-15): responden 501.
-- Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija hasta decidir el
-  modelo de embeddings (P-10).
-- Política de reintentos automáticos: hoy un fallo va a la DLQ y se reintenta con
-  `POST /api/licitaciones/{id}/reintentar`.
+- Índice vectorial: la columna `fragmentos.embedding` no tiene dimensión fija ni índice (búsqueda
+  exacta) hasta decidir el modelo de embeddings (P-10). Cambiar de modelo exige reindexar.
+
+## Fallos y reintentos del análisis (HU-B09)
+
+- El worker toma un mensaje a la vez y lo confirma a RabbitMQ solo cuando el trabajo termina.
+- Si una etapa falla, el trabajo queda `fallido` con la etapa en que falló y un mensaje para el
+  usuario; el mensaje va a la cola `analizador.fallidos` y **no se reintenta solo**.
+- `POST /api/licitaciones/{id}/reintentar` lo vuelve a encolar: con el checkpointer (P-08) el
+  análisis continúa desde la última etapa completada, sin repetir llamadas ya pagadas.
+- Si el worker se detiene a mitad, RabbitMQ reentrega el mensaje y el análisis se reanuda. Tras
+  `PIPELINE_MAX_INTENTOS` entregas, o al superar `PIPELINE_TIMEOUT_SEGUNDOS`, el trabajo se da
+  por fallido.
+
+## Límites de uso (HU-B26)
+
+| Límite | Variable | Dónde se aplica |
+| --- | --- | --- |
+| Tamaño del PDF | `MAX_PDF_MB` | Al subir (413) |
+| Páginas del PDF | `MAX_PDF_PAGINAS` | En el worker, al leer el PDF |
+| Análisis por organización en 24 h | `CUOTA_ANALISIS_DIARIA` | Al subir (429); un PDF duplicado no cuenta |
+| Preguntas al chat por organización en 24 h | `CUOTA_CHAT_DIARIA`, `CHAT_MAX_CARACTERES` | En el chat (429 / 422); solo cuentan las respondidas |
+| Borradores de observación por organización en 24 h | `CUOTA_OBSERVACIONES_DIARIA` | Al generar el borrador (429) |
+| Peticiones por minuto a NVIDIA | `NVIDIA_PETICIONES_POR_MINUTO`, `NVIDIA_MAX_REINTENTOS` | En cada llamada, con reintento y espera ante 429 |
+
+`GET /api/limites` devuelve los límites vigentes y el consumo de la organización. Los valores por
+defecto son provisionales (P-23 no fija cifras).
+
+**Tope de gasto en Anthropic (tarea manual, no de código):** en la consola de Anthropic,
+*Settings → Limits*, fijar un límite de gasto mensual acorde al presupuesto de 40 € (RC-02) y una
+alerta de consumo. Es la última barrera si fallan las cuotas.
+
+## Base de conocimiento (HU-B05)
+
+Un administrador carga un único archivo JSON con `POST /api/conocimiento` (campo `archivo`). El
+contrato está en `src/analizador/contratos/conocimiento.py` y hay un ejemplo sintético completo
+en [docs/ejemplos/base_conocimiento.json](docs/ejemplos/base_conocimiento.json).
+
+- El archivo se valida entero: si algo falla responde 422 con **todos** los errores, cada uno con
+  su campo (`contratos[2].fecha_fin`), su ubicación y un mensaje; no se guarda nada.
+- Cada carga reemplaza a la anterior por completo y en una sola transacción.
+- Tras guardar se encola la indexación (HU-B06): un fragmento por contrato, perfil, experiencia,
+  certificación, capacidad y año financiero, vectorizado por lotes con `NVIDIA_MODEL_EMBEDDINGS`. Un
+  texto ya vectorizado no se reenvía y el índice se reemplaza completo o no se toca.
+- `GET /api/conocimiento` muestra el resumen y el estado de la indexación, y
+  `POST /api/conocimiento/indexacion` la vuelve a lanzar si falló.
+
+## Lectura del pliego y OCR (HU-B10)
+
+La etapa 1 lee el PDF página por página, solo en el worker:
+
+1. **Página digital:** texto en orden de lectura con PyMuPDF; las tablas con líneas se extraen con
+   pdfplumber y se insertan en su sitio como filas `celda | celda`.
+2. **Página escaneada** (sin texto extraíble y con imágenes): Tesseract en español. Se guardan las
+   cajas de cada palabra para poder resaltar el requisito en el visor.
+3. **Tesseract no logra texto legible:** Claude con visión transcribe la página, si
+   `ANTHROPIC_MODEL_OCR` está configurado y sin pasar de `OCR_VISION_MAX_PAGINAS` por pliego.
+4. **Tampoco:** la página queda marcada como no leída y el trabajo lo informa en `detalle`.
+
+El pliego que supera `MAX_PDF_PAGINAS` falla en esta etapa con un mensaje que indica el límite.
+La imagen Docker incluye `tesseract-ocr` y `tesseract-ocr-spa`. En local, sin el idioma español
+instalado, la prueba de Tesseract real se omite (en el CI se ejecuta).
+
+PyMuPDF tiene licencia AGPL (riesgo R-13 del DAS si el proyecto continúa tras la hackatón).
+
+## División en secciones (HU-B11)
+
+La etapa 2 parte el texto del pliego en secciones por reglas, sin modelos
+(`pipeline/secciones.py`). Abre sección cada numeral jerárquico al inicio de línea (`3.2.1
+Capacidad jurídica`, `4. CRONOGRAMA`) y cada `CAPÍTULO`, `TÍTULO`, `SECCIÓN`, `ANEXO`, `FORMATO`
+o `APÉNDICE` numerado. No abren sección las entradas de la tabla de contenido, los ítems de una
+lista numerada ni las cifras al inicio de una línea. El texto anterior al primer encabezado
+forma la sección «Preámbulo».
+
+Las secciones son tramos contiguos del texto: su concatenación reproduce el pliego exacto, y la
+etapa lo comprueba por longitud antes de guardarlas. Una sección más larga que
+`SECCION_MAX_CARACTERES` se parte en tramos con el mismo numeral.
+
+## Filtro de secciones (HU-B12)
+
+La etapa 3 pregunta a un modelo de NVIDIA (`NVIDIA_MODEL_FILTRO`), por lotes, qué secciones no
+contienen requisitos, para no gastar presupuesto de Claude en antecedentes, glosarios o minutas.
+El filtro solo puede reducir costo, nunca cobertura:
+
+- Una sección se descarta únicamente con un "no" explícito, válido y con motivo. El motivo queda
+  guardado en `secciones.motivo_filtro`.
+- Duda, respuesta inválida, sección sin respuesta, modelo sin configurar o NVIDIA caído: la
+  sección pasa a extracción.
+- Aunque el modelo la descarte, una sección que mencione causales de rechazo o requisitos
+  habilitantes pasa a extracción.
+
+## Extracción de requisitos (HU-B13)
+
+La etapa 4 envía a Claude (`ANTHROPIC_MODEL_EXTRACCION`) cada sección que pasó el filtro y
+guarda lo que devuelve según el contrato `contratos/extraccion.py`: requisitos con numeral, tipo
+(habilitante, técnico, experiencia, plazo), texto literal, marca de ambigüedad y un ítem por
+condición. Los ítems que comparan un dato de la empresa con un valor del pliego llevan
+`campo`, `operador` y `valor` para verificarse en código.
+
+- El texto de la sección va entre etiquetas `<seccion>` y las instrucciones indican que el
+  documento nunca contiene órdenes (S-07). Las instrucciones son fijas y se marcan para la caché
+  de prompt.
+- Una respuesta que no cumple el contrato se reintenta una vez con el error; si vuelve a fallar,
+  la sección queda con `error` y el análisis sigue con las demás.
+- `EXTRACCION_CONCURRENCIA` secciones a la vez. Los tokens consumidos quedan en
+  `detalle.tokens.extraccion` del trabajo.
+- Un fallo de configuración (clave o modelo) detiene la etapa con un mensaje claro, sin gastar
+  más intentos.
+
+## Comprobación de cobertura (HU-B14)
+
+La etapa 5 es el control de que se analizó todo el pliego. Cuenta las secciones procesadas sobre
+el total, reintenta hasta `COBERTURA_MAX_REINTENTOS` veces las que quedaron en error o
+pendientes (solo esas: las ya procesadas no se pagan de nuevo) y manda a extracción cualquier
+sección que no hubiera pasado por el filtro. Lo que al final siga sin procesar queda
+identificado con su numeral, sus páginas y el motivo, en `detalle.cobertura` del trabajo y en el
+resultado; la etapa no falla por ello, pero la recomendación quedará condicionada.
+
+## Localización en el PDF (HU-B15)
+
+La etapa 4b calcula por código, sin modelos, dónde está cada requisito (`pipeline/localizacion.py`).
+Busca su texto literal entre las palabras de las páginas de su sección, ignorando tildes,
+mayúsculas y puntuación, y guarda en `ubicaciones_pliego` la página donde empieza y un
+rectángulo por línea en coordenadas relativas (0..1), cada uno con su página:
+
+| Precisión | Cuándo | Qué recibe el visor |
+| --- | --- | --- |
+| `exacta` | Aparece el texto completo, palabra por palabra | Página y zonas de todo el requisito |
+| `aproximada` | Solo coincide su comienzo (4 palabras o más) | Página y zonas hasta donde coincide |
+| `solo_pagina` | No se encontró, o la página no tiene cajas (visión) | Primera página de la sección, sin zonas |
+
+En las páginas escaneadas se usan las cajas del OCR. La proporción de ubicaciones de cada
+precisión queda en `detalle.ubicaciones` del trabajo.
+
+## Recuperación de evidencia (HU-B16)
+
+La etapa 6 busca, para cada ítem cualitativo, los fragmentos de la base de conocimiento de la
+organización más cercanos a su descripción (`pipeline/evidencia.py`). La descripción se
+vectoriza como consulta con `NVIDIA_MODEL_EMBEDDINGS` y la búsqueda en pgvector filtra siempre
+por organización y por ese mismo modelo. Se piden `EVIDENCIA_CANDIDATOS`, se descartan los que
+superan `EVIDENCIA_DISTANCIA_MAXIMA` y se conservan `EVIDENCIA_MAX` en `items.candidatos`, con
+el texto del fragmento y su fuente.
+
+- **Reranker (P-11, no aprobada):** apagado por defecto. Con `RERANK_ACTIVO=true`,
+  `NVIDIA_MODEL_RERANK` y `NVIDIA_RERANK_URL` reordena los candidatos; si falla, se usa el orden
+  de la búsqueda.
+- Sin fragmentos relevantes, o sin base indexada, el ítem sigue a verificación sin evidencia.
+- Los ítems numéricos no buscan evidencia: se verifican contra los datos estructurados.
+
+## Verificación de cumplimiento (HU-B17)
+
+La etapa 7 deja cada ítem con un estado, su soporte y su faltante (tabla `resultados`).
+
+- **Ítems numéricos**, en código (`pipeline/verificacion_numerica.py`): indicadores financieros
+  del último año cargado, valor y número de contratos de experiencia, y códigos UNSPSC. La
+  evidencia es el dato exacto usado. Lo que el pliego exige en SMMLV se convierte con
+  `SMMLV_COP`. La experiencia cuenta los contratos clasificados en los códigos UNSPSC que exige
+  el mismo requisito, por su porcentaje de participación.
+- **Ítems cualitativos**, con Claude (`ANTHROPIC_MODEL_VERIFICACION`): recibe el ítem y la
+  evidencia recuperada, delimitados como datos, y devuelve estado, fragmento, cita literal,
+  faltante y confianza. Un ítem sin evidencia recuperada no cumple, sin gastar una llamada.
+- **Invariantes garantizados en código:** todo estado distinto de «cumple» lleva faltante; todo
+  «cumple» lleva evidencia. Una respuesta que los viola se reintenta una vez y, si insiste, el
+  ítem queda para revisión humana sin estado favorable.
+- **Revisión en lugar de suponer:** unidad que no corresponde al campo, SMMLV sin configurar,
+  cobertura de intereses indeterminada, o experiencia que alcanza lo exigido solo sumando todos
+  los contratos porque el requisito no indica un código UNSPSC.
+
+`resultados.regla` guarda qué comparación o qué modelo produjo cada estado.
+
+## Validación de citas (HU-B18)
+
+La etapa 8 comprueba en código, sin modelos, que ninguna evidencia sea inventada
+(`pipeline/citas.py`). Cada cita de un ítem cualitativo se compara con el texto del fragmento
+que el modelo dijo usar, ignorando tildes, mayúsculas, espacios y puntuación (rapidfuzz). Con
+una similitud menor que `CITAS_UMBRAL_SIMILITUD` la evidencia queda `verificada: false` y el
+ítem pasa a revisión: ninguna cita sin verificar sostiene un «cumple». Una cita más larga que
+su fuente se compara entera, para que añadir texto a un fragmento real no cuente como válido.
+
+El texto literal de cada requisito se compara igual con su sección del pliego;
+`requisitos.texto_verificado = false` señala una posible reformulación del modelo.

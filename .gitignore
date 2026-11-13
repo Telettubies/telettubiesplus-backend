@@ -19,6 +19,9 @@ htmlcov/
 !.env.example
 !.env.prod.example
 
+# Instrucciones personales de agentes (no se versionan)
+CLAUDE.local.md
+
 # Editores / SO
 .vscode/
 .idea/

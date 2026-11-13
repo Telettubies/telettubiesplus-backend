@@ -7,8 +7,17 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from analizador.api.routers import conocimiento, health, licitaciones, miembros, resultados, yo
-from analizador.core.config import get_settings
+from analizador.api import errores
+from analizador.api.routers import (
+    conocimiento,
+    health,
+    licitaciones,
+    limites,
+    miembros,
+    resultados,
+    yo,
+)
+from analizador.core.config import Settings, get_settings
 from analizador.core.logging import configure_logging
 from analizador.db.session import get_engine
 from analizador.messaging.publicador import Publicador
@@ -28,8 +37,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await get_engine().dispose()
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
     app = FastAPI(
         title="Analizador de pliegos",
         version="0.1.0",
@@ -54,8 +63,10 @@ def create_app() -> FastAPI:
         licitaciones.router,
         resultados.router,
         conocimiento.router,
+        limites.router,
     ):
         app.include_router(router)
+    errores.registrar(app)
     return app
 
 

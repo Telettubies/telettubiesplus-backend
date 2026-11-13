@@ -5,8 +5,10 @@ RabbitMQ solo transporta el identificador del trabajo; el dashboard consulta est
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from analizador.db.base import Base, Timestamps, UUIDPk
@@ -36,5 +38,8 @@ class TrabajoProcesamiento(UUIDPk, Timestamps, Base):
     intentos: Mapped[int] = mapped_column(Integer, default=0)
     # Mensaje para el usuario; sin datos sensibles (S-14).
     error: Mapped[str | None] = mapped_column(Text)
+    # Cifras del trabajo al terminar (fuentes indexadas, páginas no leídas…). Sin contenido
+    # de documentos.
+    detalle: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     iniciado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finalizado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -9,6 +9,7 @@ from functools import partial
 from typing import Any
 
 import aio_pika
+from aio_pika.abc import AbstractChannel
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from analizador.core.config import get_settings
@@ -18,6 +19,8 @@ from analizador.pipeline import grafo
 from analizador.worker.handlers import procesar
 
 logger = logging.getLogger(__name__)
+
+MENSAJES_SIMULTANEOS = 1
 
 
 @contextlib.asynccontextmanager
@@ -29,6 +32,19 @@ async def _checkpointer() -> AsyncIterator[AsyncPostgresSaver | None]:
     async with AsyncPostgresSaver.from_conn_string(settings.psycopg_database_url) as saver:
         await saver.setup()  # crea sus tablas si no existen (idempotente)
         yield saver
+
+
+async def suscribir(canal: AbstractChannel, grafo_analisis: Any) -> None:
+    """Consume las tres colas de trabajos, un mensaje a la vez en todo el worker.
+
+    R-09 y HU-B09: la VM tiene 2 vCPU y 8 GB, así que solo corre un análisis a la vez. El
+    prefetch de 1 por canal hace que RabbitMQ no entregue otro mensaje hasta confirmar el actual.
+    """
+    await canal.set_qos(prefetch_count=MENSAJES_SIMULTANEOS)
+    _, colas = await topologia.declarar(canal)
+    for tipo, cola in colas.items():
+        await cola.consume(partial(procesar, tipo=tipo, grafo_analisis=grafo_analisis))
+    logger.info("Worker escuchando: %s", ", ".join(c.name for c in colas.values()))
 
 
 async def _main() -> None:
@@ -44,13 +60,7 @@ async def _main() -> None:
         grafo_analisis: Any = grafo.construir(checkpointer)
         conexion = await aio_pika.connect_robust(settings.rabbitmq_url.get_secret_value())
         async with conexion:
-            canal = await conexion.channel()
-            # R-09: un trabajo a la vez en la VM (2 vCPU / 8 GB).
-            await canal.set_qos(prefetch_count=1)
-            _, colas = await topologia.declarar(canal)
-            for tipo, cola in colas.items():
-                await cola.consume(partial(procesar, tipo=tipo, grafo_analisis=grafo_analisis))
-            logger.info("Worker escuchando: %s", ", ".join(c.name for c in colas.values()))
+            await suscribir(await conexion.channel(), grafo_analisis)
             await parar.wait()
     logger.info("Worker detenido")
 
