@@ -64,9 +64,16 @@ Estados: `pendiente`, `en curso`, `hecha`. Las filas `T-` son tareas técnicas t
 | 21 | HU-B19 | Calcular brechas, recomendación y justificación | hecha | laqg | 8db204a, eb5ccf8 | |
 | 22 | HU-B21 | Entregar el resultado y el acceso al PDF | hecha; integración frontend pendiente | laqg | ee6f7fe, 8bf0dd2 | |
 | 23 | HU-B27 | Desplegar de forma segura en la VM | pendiente | sar | | |
+| 24 | HU-B02 | Invitar un usuario a la organización | hecha | laqg | f91e973, 4b5e190 | |
+| 25 | HU-B03 | Gestionar miembros y roles | hecha | laqg | 9b4479a, 3f60c1b | |
+| 26 | HU-B22 | Listar las licitaciones de la organización | hecha | laqg | ed22d5c, 162f92a | |
+| 27 | HU-B23 | Registrar la revisión humana y recalcular | hecha | laqg | fcd19bb, d5c9811 | |
+| 28 | HU-B24 | Responder preguntas sobre una licitación | hecha | laqg | 7b5e003, e20f124 | |
+| 29 | HU-B25 | Generar el borrador de una observación | hecha | laqg | 2d1d73e, 8db452c | |
+| 30 | HU-B29 | Exportar la matriz a Excel | hecha | laqg | bdf7451, 373e894 | |
 
-Fuera de este plan: HU-B02, B03, B22, B23, B24, B25 (Should) y HU-B28, B29 (Could). Parte de
-su código ya existe en el andamiaje; solo se toca para garantizar el aislamiento (HU-B04).
+Fuera de este plan: HU-B28 (Could). Las Should y Could que se implementan se añaden a la tabla
+con su número de orden.
 
 Dependencias que fijan el orden: HU-B01 antes de todo lo protegido; T-01 antes de HU-B04 y
 HU-B07 (rutas y URL del almacenamiento); HU-B26 antes de las historias que llaman a NVIDIA;
@@ -150,4 +157,14 @@ Se completa al cerrar cada historia.
 - **Experiencia sin código UNSPSC (HU-B17).** Si el requisito no exige un código, no hay forma
   determinista de saber qué contratos son pertinentes: el ítem pasa a revisión cuando alcanza
   lo exigido, lo que deja la recomendación condicionada hasta que alguien lo confirme.
-- **Chat (HU-B24).** Los límites están aplicados, pero nada registra todavía las preguntas.
+- **Chat (HU-B24).** No guarda el historial de la conversación (lo conserva el frontend,
+  HU-F12). Las licitaciones analizadas antes de esta versión no tienen el pliego indexado: el
+  chat responde 409 hasta reanalizarlas.
+- **Correos con cuenta (HU-B02).** Supabase no reinvita un correo que ya tiene cuenta (por
+  ejemplo, de otra organización): la API responde 409. Agregar usuarios existentes queda pendiente.
+- **Fecha de cierre (HU-B22).** El listado no la incluye: el backend aún no persiste el
+  cronograma del pliego.
+- **Observaciones (HU-B25).** El borrador no se guarda: cada solicitud vuelve a llamar a Claude
+  y cuenta para `CUOTA_OBSERVACIONES_DIARIA`.
+- **Exportación (HU-B29).** Los textos que empiezan con `=`, `+`, `-` o `@` se ven en Excel con
+  un apóstrofo delante: es el costo de neutralizar fórmulas (S-12).

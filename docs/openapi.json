@@ -55,6 +55,31 @@
         "title": "CambioRolIn",
         "type": "object"
       },
+      "CitaChatOut": {
+        "properties": {
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "pagina": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagina"
+          }
+        },
+        "required": [
+          "numeral",
+          "pagina"
+        ],
+        "title": "CitaChatOut",
+        "type": "object"
+      },
       "CoberturaMatrizOut": {
         "properties": {
           "numerales_no_procesados": {
@@ -668,6 +693,10 @@
             "title": "Id",
             "type": "string"
           },
+          "invitacion_pendiente": {
+            "title": "Invitacion Pendiente",
+            "type": "boolean"
+          },
           "organizacion_id": {
             "format": "uuid",
             "title": "Organizacion Id",
@@ -688,9 +717,54 @@
           "usuario_id",
           "email",
           "rol",
+          "invitacion_pendiente",
           "creado_en"
         ],
         "title": "MiembroOut",
+        "type": "object"
+      },
+      "ObservacionIn": {
+        "properties": {
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requisito_id"
+        ],
+        "title": "ObservacionIn",
+        "type": "object"
+      },
+      "ObservacionOut": {
+        "description": "Borrador de observación para la entidad (HU-B25). El sistema no lo envía.",
+        "properties": {
+          "asunto": {
+            "title": "Asunto",
+            "type": "string"
+          },
+          "numeral": {
+            "title": "Numeral",
+            "type": "string"
+          },
+          "requisito_id": {
+            "format": "uuid",
+            "title": "Requisito Id",
+            "type": "string"
+          },
+          "texto": {
+            "title": "Texto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requisito_id",
+          "numeral",
+          "asunto",
+          "texto"
+        ],
+        "title": "ObservacionOut",
         "type": "object"
       },
       "PrecisionUbicacion": {
@@ -910,6 +984,33 @@
           "items"
         ],
         "title": "RequisitoOut",
+        "type": "object"
+      },
+      "RespuestaChatOut": {
+        "description": "Respuesta del chat de una licitación (HU-B24). Texto plano: nunca se renderiza como HTML.",
+        "properties": {
+          "citas": {
+            "items": {
+              "$ref": "#/components/schemas/CitaChatOut"
+            },
+            "title": "Citas",
+            "type": "array"
+          },
+          "encontrado": {
+            "title": "Encontrado",
+            "type": "boolean"
+          },
+          "respuesta": {
+            "title": "Respuesta",
+            "type": "string"
+          }
+        },
+        "required": [
+          "respuesta",
+          "encontrado",
+          "citas"
+        ],
+        "title": "RespuestaChatOut",
         "type": "object"
       },
       "ResultadoMatrizOut": {
@@ -1197,6 +1298,17 @@
       },
       "RevisionOut": {
         "properties": {
+          "autor_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Autor Email"
+          },
           "comentario": {
             "title": "Comentario",
             "type": "string"
@@ -1833,9 +1945,25 @@
     },
     "/api/licitaciones": {
       "get": {
-        "description": "Panel general de licitaciones de la organización (RF-11, RF-12).",
+        "description": "Panel de licitaciones de la organización con estado y recomendación (RF-11, HU-B22).",
         "operationId": "listar_api_licitaciones_get",
         "parameters": [
+          {
+            "description": "Orden por fecha de carga: primero las más recientes o las más antiguas",
+            "in": "query",
+            "name": "orden",
+            "required": false,
+            "schema": {
+              "default": "recientes",
+              "description": "Orden por fecha de carga: primero las más recientes o las más antiguas",
+              "enum": [
+                "recientes",
+                "antiguas"
+              ],
+              "title": "Orden",
+              "type": "string"
+            }
+          },
           {
             "in": "header",
             "name": "x-organizacion-id",
@@ -2033,7 +2161,7 @@
     },
     "/api/licitaciones/{licitacion_id}/chat": {
       "post": {
-        "description": "Chat de la licitación (RF-13). La respuesta es de HU-B24; los límites ya se aplican.",
+        "description": "Responde una pregunta sobre el pliego y su resultado, citando numerales (HU-B24).",
         "operationId": "chat_api_licitaciones__licitacion_id__chat_post",
         "parameters": [
           {
@@ -2075,6 +2203,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2084,14 +2222,6 @@
               }
             },
             "description": "Validation Error"
-          },
-          "501": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
           }
         },
         "security": [
@@ -2105,9 +2235,10 @@
         ]
       }
     },
-    "/api/licitaciones/{licitacion_id}/observaciones": {
-      "post": {
-        "operationId": "observaciones_api_licitaciones__licitacion_id__observaciones_post",
+    "/api/licitaciones/{licitacion_id}/exportar": {
+      "get": {
+        "description": "Descarga la matriz en Excel: una fila por ítem y una hoja de resumen (HU-B29).",
+        "operationId": "exportar_matriz_api_licitaciones__licitacion_id__exportar_get",
         "parameters": [
           {
             "in": "path",
@@ -2138,6 +2269,12 @@
           }
         ],
         "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "Matriz en Excel"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -2147,14 +2284,82 @@
               }
             },
             "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Exportar Matriz",
+        "tags": [
+          "licitaciones"
+        ]
+      }
+    },
+    "/api/licitaciones/{licitacion_id}/observaciones": {
+      "post": {
+        "description": "Borrador de observación para un requisito ambiguo; no se envía a la entidad (HU-B25).",
+        "operationId": "observaciones_api_licitaciones__licitacion_id__observaciones_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "licitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Licitacion Id",
+              "type": "string"
+            }
           },
-          "501": {
+          {
+            "in": "header",
+            "name": "x-organizacion-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organizacion-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservacionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ObservacionOut"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -2302,7 +2507,7 @@
     },
     "/api/licitaciones/{licitacion_id}/reintentar": {
       "post": {
-        "description": "Reencola el último análisis fallido. Con el checkpointer (P-08) se reanuda donde quedó.",
+        "description": "Reencola el último análisis o recálculo fallido (HU-B09, HU-B23).\n\nCon el checkpointer (P-08) un análisis se reanuda donde quedó; un recálculo tras una\nrevisión humana solo repite brechas, recomendación y justificación.",
         "operationId": "reintentar_api_licitaciones__licitacion_id__reintentar_post",
         "parameters": [
           {
@@ -2587,6 +2792,7 @@
     },
     "/api/miembros": {
       "get": {
+        "description": "Miembros de la organización con su rol y si la invitación sigue pendiente (HU-B03).",
         "operationId": "listar_api_miembros_get",
         "parameters": [
           {
@@ -2646,6 +2852,7 @@
     },
     "/api/miembros/invitaciones": {
       "post": {
+        "description": "Invita un correo con un rol a la organización del administrador (HU-B02).",
         "operationId": "invitar_api_miembros_invitaciones_post",
         "parameters": [
           {
@@ -2711,6 +2918,7 @@
     },
     "/api/miembros/{miembro_id}": {
       "delete": {
+        "description": "Retira a un miembro: pierde el acceso en su siguiente petición (HU-B03).",
         "operationId": "eliminar_api_miembros__miembro_id__delete",
         "parameters": [
           {
@@ -2769,6 +2977,7 @@
     },
     "/api/miembros/{miembro_id}/rol": {
       "patch": {
+        "description": "Cambia el rol de un miembro de la organización (HU-B03).",
         "operationId": "cambiar_rol_api_miembros__miembro_id__rol_patch",
         "parameters": [
           {

@@ -17,6 +17,7 @@ from analizador.pipeline import (
     evidencia,
     extraccion,
     filtrado,
+    indexacion_pliego,
     lectura,
     localizacion,
     progreso,
@@ -91,8 +92,10 @@ async def comprobar_cobertura(estado: EstadoAnalisis) -> dict[str, Any]:
 
 @etapa("recuperacion_evidencia")
 async def recuperar_evidencia(estado: EstadoAnalisis) -> dict[str, Any]:
-    # Etapa 6: fragmentos de la base de conocimiento más cercanos a cada ítem (HU-B16).
+    # Etapa 6: fragmentos de la base de conocimiento más cercanos a cada ítem (HU-B16) e
+    # índice del pliego para el chat, de mejor esfuerzo (HU-B24).
     await evidencia.ejecutar(estado)
+    await indexacion_pliego.ejecutar(estado)
     return {}
 
 
